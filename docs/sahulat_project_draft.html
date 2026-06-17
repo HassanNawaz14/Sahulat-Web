@@ -1,0 +1,231 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.doc { padding: 0.5rem 0; max-width: 100%; }
+h1 { font-size: 20px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+h2 { font-size: 15px; font-weight: 500; color: var(--color-text-primary); margin: 28px 0 10px; border-bottom: 0.5px solid var(--color-border-tertiary); padding-bottom: 6px; }
+h3 { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin: 14px 0 6px; }
+p { font-size: 13px; color: var(--color-text-secondary); line-height: 1.65; margin-bottom: 8px; }
+.subtitle { font-size: 13px; color: var(--color-text-tertiary); margin-bottom: 20px; }
+.tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 4px; font-weight: 500; margin-right: 4px; }
+.t-yes  { background: var(--color-background-success); color: var(--color-text-success); }
+.t-part { background: var(--color-background-warning); color: var(--color-text-warning); }
+.t-no   { background: var(--color-background-danger);  color: var(--color-text-danger); }
+.t-core { background: var(--color-background-info);    color: var(--color-text-info); }
+.sector { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: 10px; padding: 1rem 1.1rem; margin-bottom: 10px; }
+.sector-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
+.sector-name { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+.row { display: flex; gap: 8px; margin-bottom: 7px; align-items: flex-start; }
+.dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.g { background: var(--color-text-success); }
+.o { background: var(--color-text-warning); }
+.r { background: var(--color-text-danger); }
+.b { background: var(--color-text-info); }
+.row span.text { font-size: 13px; color: var(--color-text-secondary); line-height: 1.55; }
+.row span.text strong { color: var(--color-text-primary); font-weight: 500; }
+.module-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+.mod { background: var(--color-background-secondary); border-radius: 8px; padding: .7rem .9rem; }
+.mod-title { font-size: 12px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 3px; }
+.mod-sub { font-size: 11px; color: var(--color-text-secondary); line-height: 1.5; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.leg { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--color-text-secondary); }
+.stack-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 8px 0; }
+.stack-table th { text-align: left; font-weight: 500; font-size: 11px; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: .04em; padding: 4px 8px 6px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.stack-table td { padding: 6px 8px 6px 0; color: var(--color-text-secondary); font-size: 12px; border-bottom: 0.5px solid var(--color-border-tertiary); vertical-align: top; line-height: 1.5; }
+.stack-table td:first-child { color: var(--color-text-primary); font-weight: 500; white-space: nowrap; }
+.stack-table tr:last-child td { border-bottom: none; }
+.phase { background: var(--color-background-secondary); border-radius: 8px; padding: .75rem 1rem; margin-bottom: 8px; }
+.phase-head { font-size: 12px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+.phase-sub { font-size: 12px; color: var(--color-text-secondary); line-height: 1.55; }
+.name-box { background: var(--color-background-secondary); border-radius: 8px; padding: .7rem 1rem; margin: 10px 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.name-main { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
+.name-mean { font-size: 13px; color: var(--color-text-tertiary); }
+.alert-box { border: 0.5px solid var(--color-border-warning); background: var(--color-background-warning); border-radius: 8px; padding: .7rem 1rem; margin: 12px 0; font-size: 13px; color: var(--color-text-warning); line-height: 1.6; }
+.section-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .06em; color: var(--color-text-tertiary); margin: 24px 0 10px; }
+</style>
+
+<div class="doc">
+
+<h1>Sahulat — Project Draft v1.0</h1>
+<p class="subtitle">A comprehensive domestic utility companion for Pakistan. All-in-one: tracking, outages, bills, complaints, solar, budgeting.</p>
+
+<div class="legend">
+  <div class="leg"><span class="tag t-yes">Fully Free</span> Build with zero cost or APIs</div>
+  <div class="leg"><span class="tag t-part">Partial</span> Feasible with workarounds</div>
+  <div class="leg"><span class="tag t-no">Hard</span> Blocked or requires partnership</div>
+</div>
+
+<!-- ============ SECTOR REALITY ============ -->
+<div class="section-label">Section 1 — Sector Reality Check</div>
+
+<div class="sector">
+  <div class="sector-head">
+    <span class="sector-name">⚡ Electricity (LESCO, GEPCO, FESCO, MEPCO, IESCO, PESCO, QESCO, HESCO, SEPCO, K-Electric)</span>
+    <span class="tag t-yes">Richest Sector</span>
+  </div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>Bill fetch:</strong> Every DISCO (distribution company) has a public bill check URL — enter reference number, get bill data. Fully scrapeable. LESCO: lesco.com.pk, K-Electric: ke.com.pk etc. No login needed.</span></div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>Load shedding schedule:</strong> WAPDA/DISCOs publish weekly feeder-wise PDFs every Monday. Python + pdfplumber can parse these automatically. LESCO's PDFs are the most consistent.</span></div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>Tariff slabs (NEPRA):</strong> Fully public at nepra.org.pk. 0–100 units at Rs. 7.74/unit, slabs go up to 700+ at Rs. 26.84/unit. Bill estimator is 100% buildable.</span></div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>Slab boundary alert:</strong> Killer feature — tell the user "you've used 290 units, 10 more units will push you into the next slab and cost Rs. 800 extra." No app in Pakistan does this.</span></div>
+  <div class="row"><span class="dot o"></span><span class="text"><strong>Complaint submission (NEPRA):</strong> NEPRA has a complaint web form at complaints.nepra.org.pk. No official API, but you can auto-fill and submit it using stored user data (Playwright/Puppeteer). Fragile but workable.</span></div>
+  <div class="row"><span class="dot r"></span><span class="text"><strong>Real-time unscheduled outage data:</strong> No official source exists. Must be crowd-sourced — users report, system maps it. This is actually your biggest differentiator once you have users.</span></div>
+  <div class="row"><span class="dot r"></span><span class="text"><strong>Bill payment:</strong> Requires JazzCash/EasyPaisa merchant account (needs business registration). V1 workaround: deep-link into JazzCash app with pre-filled consumer number. User pays in JazzCash, you just saved them the typing.</span></div>
+</div>
+
+<div class="sector">
+  <div class="sector-head">
+    <span class="sector-name">🔥 Gas (SNGPL — North, SSGC — South/Sindh)</span>
+    <span class="tag t-part">Moderate</span>
+  </div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>Bill fetch:</strong> SNGPL (sngpl.com.pk) and SSGC (ssgc.com.pk) both have public bill lookup by consumer number. Fully scrapeable. Bill history available too.</span></div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>Tariff slabs (OGRA):</strong> Published quarterly at ogra.org.pk. Residential slabs in MMBtu. Bill estimator buildable — just needs manual tariff updates quarterly.</span></div>
+  <div class="row"><span class="dot o"></span><span class="text"><strong>Load management schedule:</strong> SNGPL publishes gas reduction schedules in winters on their website and Facebook, but not in a machine-readable format. Scrape their news/announcements section + crowd-source for real-time pressure issues.</span></div>
+  <div class="row"><span class="dot r"></span><span class="text"><strong>Real-time pressure data:</strong> Doesn't exist publicly. Pure crowd-source only — "gas pressure low in my area right now."</span></div>
+  <div class="row"><span class="dot o"></span><span class="text"><strong>Complaint submission:</strong> Both utilities have web complaint forms. Auto-fillable with stored user data. No API.</span></div>
+</div>
+
+<div class="sector">
+  <div class="sector-head">
+    <span class="sector-name">💧 Water (WASA Lahore, KW&SB Karachi, WASA Rawalpindi, others)</span>
+    <span class="tag t-part">Limited Data</span>
+  </div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>Bill fetch:</strong> WASA Lahore (wasa.punjab.gov.pk) and KW&SB (kwsb.org.pk) have online bill check. Scrapeable. Many smaller cities (Multan, Faisalabad WASA) also have portals.</span></div>
+  <div class="row"><span class="dot o"></span><span class="text"><strong>Supply schedule:</strong> WASA publishes supply timings in newspapers and Facebook occasionally — no consistent machine-readable source. Must be manually entered by admin or crowd-sourced by users.</span></div>
+  <div class="row"><span class="dot r"></span><span class="text"><strong>Consumption tracking:</strong> Most homes have no smart meter. User manually enters meter reading. Your app calculates gallons used, projects monthly bill. Simple but valuable.</span></div>
+  <div class="row"><span class="dot r"></span><span class="text"><strong>Water quality data:</strong> Does not exist publicly in Pakistan. Leave this for a future version.</span></div>
+  <div class="row"><span class="dot o"></span><span class="text"><strong>Tanker tracking:</strong> Fully informal market. Could add "request water tanker" feature that links to local tanker services in major cities — affiliate-style.</span></div>
+</div>
+
+<div class="sector">
+  <div class="sector-head">
+    <span class="sector-name">🌐 Internet (PTCL, Nayatel, StormFiber, Jazz, Zong, Telenor)</span>
+    <span class="tag t-part">Moderate</span>
+  </div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>Bill fetch:</strong> PTCL (ptcl.com.pk) and Nayatel have public bill check. StormFiber and others have customer portals. Scrapeable with login (user provides credentials, stored securely).</span></div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>Package comparison:</strong> No site cleanly compares PTCL vs Nayatel vs StormFiber vs Jazz Home packages by area. You can build this as a static but regularly-updated module. High search traffic.</span></div>
+  <div class="row"><span class="dot o"></span><span class="text"><strong>Outage tracking:</strong> ISPs don't publish outage info. Downdetector.pk exists but is thin. Crowd-sourced "my internet is down" reports aggregated by ISP + city is genuinely useful.</span></div>
+  <div class="row"><span class="dot o"></span><span class="text"><strong>Usage tracking:</strong> Mobile data (Jazz/Zong/Telenor) has no public API. PTCL usage sometimes visible on portal. Mostly manual entry or user-provided credentials.</span></div>
+  <div class="row"><span class="dot o"></span><span class="text"><strong>Complaint:</strong> PTA complaint portal (complaints.pta.gov.pk) accepts telecom complaints. Auto-fillable.</span></div>
+</div>
+
+<div class="sector">
+  <div class="sector-head">
+    <span class="sector-name">📺 Cable TV (Local operators, StormFiber TV, PTCL Smart TV)</span>
+    <span class="tag t-no">Weakest Sector</span>
+  </div>
+  <div class="row"><span class="dot r"></span><span class="text"><strong>Reality:</strong> 90% of cable TV in Pakistan runs through informal local operators with no digital presence — monthly Rs. 500 collected door-to-door. No bill portals, no APIs, no data.</span></div>
+  <div class="row"><span class="dot o"></span><span class="text"><strong>What's buildable:</strong> Manual expense tracker only — user logs "paid Rs. 700 to cable guy on 5th." PTCL Smart TV and StormFiber TV have portals but very small user base.</span></div>
+  <div class="row"><span class="dot r"></span><span class="text"><strong>Recommendation:</strong> Include cable TV as a manual expense entry in the budget module only. Don't build a dedicated cable module — there's no data to work with.</span></div>
+</div>
+
+<div class="sector">
+  <div class="sector-head">
+    <span class="sector-name">☀️ Solar & Net Metering</span>
+    <span class="tag t-yes">High Value, Underbuilt</span>
+  </div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>Market timing:</strong> Pakistan installed 17,000+ MW of solar in homes in 2023–24 alone due to extreme electricity prices. This is the fastest-growing domestic utility in the country right now.</span></div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>Inverter APIs:</strong> Growatt (most common brand in Pakistan) has a free ShineMonitor API. Solis has SolisCloud API. Huawei FusionSolar has API access. User connects their inverter account — you pull daily production data automatically.</span></div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>Net metering calculator:</strong> NEPRA's net metering policy (Rs. 27/unit exported) is public. Calculate how much the user is saving and how much DISCO owes them this month.</span></div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>ROI tracker:</strong> User enters system cost (e.g. Rs. 1,200,000 for 10kW), you track monthly savings and tell them "your system will pay back in 3.2 years at current rates."</span></div>
+  <div class="row"><span class="dot g"></span><span class="text"><strong>Panel health alerts:</strong> If production drops unexpectedly vs sunny-day baseline, alert user that a panel may be dirty or underperforming.</span></div>
+  <div class="row"><span class="dot o"></span><span class="text"><strong>Solar sizing tool:</strong> User enters monthly electricity units → app recommends system size (kW) and estimated cost. High affiliate potential with solar companies.</span></div>
+</div>
+
+<!-- ============ MODULE ARCHITECTURE ============ -->
+<div class="section-label">Section 2 — Module Architecture</div>
+
+<h3>Core Modules (Build in V1)</h3>
+<div class="module-grid">
+  <div class="mod"><p class="mod-title">M1 — Bill Tracker</p><p class="mod-sub">Fetch + store bills by consumer number for electricity, gas, water, internet. Show monthly trends. No login needed for most utilities.</p></div>
+  <div class="mod"><p class="mod-title">M2 — Consumption Monitor</p><p class="mod-sub">Manual meter reading entry with daily/monthly unit tracking. Slab boundary alerts. Projected end-of-month bill before the actual bill arrives.</p></div>
+  <div class="mod"><p class="mod-title">M3 — Outage Tracker</p><p class="mod-sub">Electricity load shedding (PDF-parsed, scheduled). Crowd-sourced real-time reports for gas, water, internet. Push notifications before scheduled cuts.</p></div>
+  <div class="mod"><p class="mod-title">M4 — Bill Estimator</p><p class="mod-sub">Enter units → get exact estimated bill using NEPRA/OGRA/WASA tariff slabs including taxes, surcharges, and meter rent.</p></div>
+  <div class="mod"><p class="mod-title">M5 — Budget Manager</p><p class="mod-sub">Monthly utility spending dashboard. Set budget per utility. Track actuals. Add other expenses (education, grocery). Monthly summary report.</p></div>
+  <div class="mod"><p class="mod-title">M6 — Solar Dashboard</p><p class="mod-sub">Connect Growatt/Solis/Huawei inverter. See daily production vs consumption. Net metering savings. ROI countdown. Panel health alerts.</p></div>
+</div>
+
+<h3>Secondary Modules (Build in V2 — post first users)</h3>
+<div class="module-grid">
+  <div class="mod"><p class="mod-title">M7 — Complaint Assistant</p><p class="mod-sub">User's details stored once. App auto-fills NEPRA, OGRA, PTA, WASA complaint forms. Tracks complaint reference numbers and status.</p></div>
+  <div class="mod"><p class="mod-title">M8 — Pay Gateway (Lite)</p><p class="mod-sub">Deep-link to JazzCash/EasyPaisa with pre-filled consumer number + amount. Not actual payment processing — just eliminates manual entry friction.</p></div>
+  <div class="mod"><p class="mod-title">M9 — ISP Comparison</p><p class="mod-sub">Compare internet packages by city/area. PTCL vs Nayatel vs StormFiber speeds, prices, reliability scores (crowd-sourced). High affiliate potential.</p></div>
+  <div class="mod"><p class="mod-title">M10 — Community Reports</p><p class="mod-sub">Hyperlocal feed: "Gas low pressure in DHA Phase 5 right now — 14 reports." Outage map. Verified vs unverified reports. WhatsApp share button.</p></div>
+  <div class="mod"><p class="mod-title">M11 — Solar Sizing Tool</p><p class="mod-sub">Enter avg monthly units → get recommended system size, estimated cost, and payback period. Affiliate links to vetted solar vendors.</p></div>
+  <div class="mod"><p class="mod-title">M12 — Usage Insights</p><p class="mod-sub">Data science layer: seasonal patterns, unusual consumption spikes, appliance cost breakdown estimator ("your AC costs ~Rs. 4,200/month to run").</p></div>
+</div>
+
+<!-- ============ WHAT IS ACTUALLY FREE ============ -->
+<div class="section-label">Section 3 — What Is Actually Free to Build</div>
+
+<table class="stack-table">
+  <tr><th>Feature</th><th>Reality</th><th>Cost</th></tr>
+  <tr><td>Bill fetch (electricity)</td><td>Scrape DISCO portals by reference number. Works for all 10 DISCOs.</td><td>Free</td></tr>
+  <tr><td>Bill fetch (gas)</td><td>Scrape SNGPL + SSGC portals. Works reliably.</td><td>Free</td></tr>
+  <tr><td>Bill fetch (water)</td><td>Works for WASA Lahore, KW&SB. Partial for other cities.</td><td>Free</td></tr>
+  <tr><td>Load shedding (electricity)</td><td>Parse DISCO PDFs with pdfplumber. Weekly cron job. Works well for LESCO.</td><td>Free</td></tr>
+  <tr><td>Tariff calculators</td><td>Hardcode NEPRA/OGRA slabs. Update quarterly. 100% accurate.</td><td>Free</td></tr>
+  <tr><td>Push notifications</td><td>Web Push API — no cost, works on Android Chrome as PWA.</td><td>Free</td></tr>
+  <tr><td>Crowd-sourced reports</td><td>Supabase free tier handles this easily at early scale.</td><td>Free</td></tr>
+  <tr><td>Solar inverter data</td><td>Growatt ShineMonitor API is free. Solis, Huawei have free tiers too.</td><td>Free</td></tr>
+  <tr><td>Complaint auto-fill</td><td>Puppeteer/Playwright fills forms with stored user data. No official API.</td><td>Free</td></tr>
+  <tr><td>Budget manager</td><td>Pure frontend + Supabase. Zero external dependency.</td><td>Free</td></tr>
+  <tr><td>Bill payment (actual)</td><td>Needs JazzCash/EasyPaisa merchant account. Requires business registration.</td><td>Blocked V1</td></tr>
+  <tr><td>Gas supply schedule</td><td>No machine-readable source. Manual admin entry + crowd-source only.</td><td>Workaround</td></tr>
+  <tr><td>Water supply timing</td><td>No consistent public data. Crowd-source only.</td><td>Workaround</td></tr>
+  <tr><td>Mobile data tracking</td><td>No public API for Jazz/Zong/Telenor. Manual entry only.</td><td>Workaround</td></tr>
+</table>
+
+<!-- ============ MONETIZATION ============ -->
+<div class="section-label">Section 4 — Monetization Strategy</div>
+
+<div class="row" style="margin-bottom:9px"><span class="dot g"></span><span class="text"><strong>Google AdSense:</strong> Primary revenue from day one. High daily session count (users check 3–5x per day) means high impressions. Solar and UPS brands have high CPCs in Pakistan.</span></div>
+<div class="row" style="margin-bottom:9px"><span class="dot g"></span><span class="text"><strong>Daraz Affiliate:</strong> UPS, inverters, batteries, solar panels, energy-saving appliances. A user who just got a Rs. 8,000 electricity bill is a very motivated buyer. Link them to relevant products.</span></div>
+<div class="row" style="margin-bottom:9px"><span class="dot g"></span><span class="text"><strong>Solar company affiliate:</strong> Solar installers in Pakistan charge Rs. 800,000–2,000,000 per system. If your tool recommends a system and the user contacts a vendor via your referral, charge the vendor Rs. 3,000–10,000 per lead. Very achievable once you have traffic.</span></div>
+<div class="row" style="margin-bottom:9px"><span class="dot g"></span><span class="text"><strong>ISP referral:</strong> Nayatel, StormFiber, and others pay referral commissions. Your ISP comparison module sends them verified, intent-heavy leads.</span></div>
+<div class="row" style="margin-bottom:9px"><span class="dot o"></span><span class="text"><strong>Premium tier (later):</strong> Rs. 99/month for SMS outage alerts (not everyone has data during outage), bill history export to PDF, multi-home tracking. Optional — ads alone will sustain early growth.</span></div>
+
+<!-- ============ TECH STACK ============ -->
+<div class="section-label">Section 5 — Recommended Tech Stack</div>
+
+<table class="stack-table">
+  <tr><th>Layer</th><th>Tool</th><th>Why</th></tr>
+  <tr><td>Frontend</td><td>Next.js (PWA)</td><td>SSR = SEO. PWA = push notifications + home screen install. No app store needed.</td></tr>
+  <tr><td>Styling</td><td>Tailwind CSS</td><td>Fast to build, mobile-first out of the box.</td></tr>
+  <tr><td>Database</td><td>Supabase</td><td>Free tier: 500MB DB + real-time + auth. Enough for 10,000 users.</td></tr>
+  <tr><td>Scrapers</td><td>Python + pdfplumber + BeautifulSoup</td><td>Bill fetch + PDF parsing. Run as cron jobs on Railway.app free tier.</td></tr>
+  <tr><td>Backend API</td><td>FastAPI (Python)</td><td>Lightweight, fast, you already know Python from BDS.</td></tr>
+  <tr><td>Push notifications</td><td>Web Push API</td><td>Free, no third-party service needed for basic notifications.</td></tr>
+  <tr><td>Hosting</td><td>Vercel (frontend) + Railway (backend)</td><td>Both have generous free tiers. Zero cost for early stage.</td></tr>
+  <tr><td>Auth</td><td>Supabase Auth</td><td>Built-in, free, handles phone/email/Google login.</td></tr>
+  <tr><td>Solar API</td><td>Growatt ShineMonitor</td><td>Most popular brand in PK. Free API with documentation.</td></tr>
+</table>
+
+<!-- ============ BUILD TIMELINE ============ -->
+<div class="section-label">Section 6 — Summer Build Roadmap</div>
+
+<div class="phase"><p class="phase-head">Week 1–2 — Core Data Layer</p><p class="phase-sub">Build scrapers for LESCO bill fetch + load shedding PDF parser. Build SNGPL + SSGC bill scraper. Set up Supabase schema: users, consumer_numbers, bills, outage_schedules, reports. Deploy scrapers on Railway cron.</p></div>
+<div class="phase"><p class="phase-head">Week 3 — Frontend MVP</p><p class="phase-sub">Build Next.js PWA. Screens: Dashboard, Add Utility (enter consumer number), Bill View (fetched bill + trend graph), Outage Schedule (today/tomorrow + countdown timer). Deploy on Vercel. Make it a PWA so it can be installed.</p></div>
+<div class="phase"><p class="phase-head">Week 4 — Engagement Features</p><p class="phase-sub">Add push notifications (15-min outage warning). Add slab boundary alerts ("you're 20 units from the next slab"). Add one-tap outage reporting. Add WhatsApp share button for schedules. Apply for Google AdSense.</p></div>
+<div class="phase"><p class="phase-head">Week 5 — Budget + Estimator</p><p class="phase-sub">Build bill estimator (enter units → get exact bill). Build budget dashboard (monthly utility spend tracker). Add NEPRA + OGRA tariff data. Add basic expense tracker for other categories.</p></div>
+<div class="phase"><p class="phase-head">Week 6 — Solar Module + AdSense Live</p><p class="phase-sub">Integrate Growatt API for solar users. Build net metering calculator. AdSense should be approved by now — first revenue. Add Daraz affiliate links to UPS/battery product recommendations.</p></div>
+<div class="phase"><p class="phase-head">Post-Summer — Scale</p><p class="phase-sub">Add remaining DISCOs (GEPCO, FESCO, MEPCO etc). Add WASA water bill. Add ISP comparison module. Add complaint auto-fill. Onboard solar vendor affiliates. Each addition = new user wave.</p></div>
+
+<!-- ============ NAME ============ -->
+<div class="section-label">Section 7 — Project Name</div>
+<div class="name-box">
+  <span class="name-main">Sahulat</span>
+  <span class="name-mean">Urdu — "ease / convenience". Every Pakistani knows this word. Domain: sahulat.pk or sahulat.app</span>
+</div>
+<p>Alternative names: <strong>BillSaathi</strong> (bill companion), <strong>GharHisaab</strong> (home accounts), <strong>UtiliPK</strong> (utilitarian, memorable). Sahulat is the strongest — it speaks to the promise of the app in one word that resonates across all demographics.</p>
+
+<div class="alert-box">
+  ⚠️ Honest caveat: Cable TV and mobile data tracking are the two weakest modules — no public data exists for either. Build them as manual expense trackers only and don't over-promise. Everything else in this draft is genuinely buildable, for free, with your current skill set.
+</div>
+
+<div style="margin-top: 16px; padding-top: 12px; border-top: 0.5px solid var(--color-border-tertiary); font-size: 12px; color: var(--color-text-tertiary); line-height: 1.6;">
+  Draft prepared for BDS student, FAST NUCES Lahore — Summer 2025 build cycle.<br>
+  Stack: Next.js · FastAPI · Supabase · Python scrapers · Vercel · Railway · Growatt API · Web Push
+</div>
+
+</div>

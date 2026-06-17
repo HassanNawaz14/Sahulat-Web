@@ -1,0 +1,47 @@
+I want your help planning a vast project, documentation etc. Before sharing actual information about the project, I want you to stick to some of these rules:
+
+1. Always provide all documents in MD format, the project is going to be mostly Vibe Coded so we first need proper planed documentation in best readable format!
+2. The main goal of the project is to make the users totally dependant on it in daily life usage and to monetize it in any way possible as soon as we can.
+3. Only a rough draft is ready, lacking many technical details, the feature details are not even final in that one so stick to the plan I'll give you but always keep space for adding feature (always add features yourself where needed)
+4. The documentation you'll provide is not like README,(which is updated with development), I need rigid plans with all technical details that can define anything that would be done during development, without any abstraction for Developer or Coding Agents!
+5. The documentation is mainly for both Human Developer and Coding Agents, it is going to be maintained on git repo too in separate /docs folder.
+6. At any point, use you limits wisely, we need the work done under limits, no matter how slow it is or how many separate prompts it takes!
+
+Now Do this for the attached Draft (HTML file):
+It is going to be a web application, I want you to divide whole project (from draft) into separate Parts, in proper hierarchy (like if you divide on basis on modules, parts should be numbered in the best sequence for development). Make separate Document (MD file) for each part. Mentioned dependant parts (if anything in some document is dependant on anything in some other document). Be very careful in the division and make your best effort in doing that. Also there are going to be many document so use your (token) limits in a way that all documents would be generates in this session (divide your work if needed!).
+Before anything, understand the HTML draft deeply and remember to enhance it too (add features where needed!)
+
+Progress: (Only made 7 documents out of 22):
+Good — I have the full draft. Let me now plan the document structure before generating any files.
+
+Here's my (AI's) analysis and proposed document plan:
+
+---
+
+**Identified Parts (Development Sequence):**
+
+| # | Doc | Covers |
+|---|-----|--------|
+| P01 | Project Overview | Vision, name, goals, monetization strategy, scope |
+| P02 | Tech Stack & Architecture | All layers, hosting, infra, why each choice |
+| P03 | Database Schema | All Supabase tables, relations, indexes, RLS |
+| P04 | Auth & User System | Supabase Auth, profile, multi-home, onboarding |
+| P05 | Scraper System | All scrapers (electricity, gas, water, internet), cron jobs, Railway deploy |
+| P06 | Bill Tracker Module (M1) | Consumer number management, bill fetch, history, trends |
+| P07 | Consumption Monitor Module (M2) | Manual meter readings, slab alerts, projections |
+| P08 | Bill Estimator Module (M4) | NEPRA/OGRA/WASA tariff data, calculator logic |
+| P09 | Outage Tracker Module (M3) | PDF parser, crowd-source reports, push notifications |
+| P10 | Budget Manager Module (M5) | Expense tracking, categories, summaries, reports |
+| P11 | Solar Dashboard Module (M6) | Growatt/Solis/Huawei API, net metering, ROI, health |
+| P12 | Community Reports Module (M10) | Hyperlocal feed, maps, verification, WhatsApp share |
+| P13 | Complaint Assistant Module (M7) | Playwright auto-fill, complaint tracking |
+| P14 | ISP Comparison Module (M9) | Package data, crowd ratings, affiliate |
+| P15 | Pay Gateway Lite Module (M8) | Deep-link JazzCash/EasyPaisa |
+| P16 | Solar Sizing Tool Module (M11) | Sizing calculator, vendor affiliates |
+| P17 | Usage Insights Module (M12) | Data science layer, patterns, appliance estimator |
+| P18 | Monetization & Affiliate System | AdSense, Daraz, solar leads, ISP referrals, premium tier |
+| P19 | Notifications & Alerts System | Web Push, slab alerts, outage warnings, architecture |
+| P20 | Frontend Architecture & PWA | Next.js structure, PWA config, routing, UI system |
+| P21 | API Spec (Backend) | All FastAPI endpoints, request/response schemas |
+| P22 | Deployment & DevOps | Vercel, Railway, env vars, CI/CD, cron management |
+
