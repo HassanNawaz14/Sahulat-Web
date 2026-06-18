@@ -25,7 +25,9 @@ Sahulat/
 │   │   └── schemas/   # Pydantic v2 schemas
 │   ├── migrations/    # Database migrations
 │   └── scripts/       # Utility scripts
-└── docs/              # 22-part specification documents (P01–P22)
+├── docs/              # 22-part specification documents (P01–P22)
+├── AGENTS.md          # AI development rules & conventions
+└── README.md
 ```
 
 ---
@@ -44,12 +46,29 @@ Sahulat/
 
 ---
 
+## Quick Start
+
+```bash
+# Frontend
+cd frontend
+npm install          # already done
+npm run dev          # http://localhost:3000
+
+# Backend
+cd backend
+pip install -r requirements.txt   # already done
+python -m uvicorn app.main:app --reload   # http://localhost:8000
+```
+
+---
+
 ## Developer Log
 
 | Part | Developer      | Status      | Notes                              |
 |------|----------------|-------------|------------------------------------|
 | P01  | hassan-dev     | ✅ Complete | Project overview & scope defined   |
-| P02  | hassan-dev     | 🔄 In Progress | Tech stack, architecture, setup  |
+| P02  | hassan-dev     | ✅ Complete | Stack initialized, deps installed  |
+| P03  | hassan-dev     | ✅ Complete | 22 tables, RLS, triggers, seed data verified |
 
 ---
 
@@ -81,7 +100,3 @@ Full 22-part specification in `/docs/`:
 | P20 | Frontend Architecture & PWA | Frontend |
 | P21 | API Spec (Backend) | Backend |
 | P22 | Deployment & DevOps | Infrastructure |
-
----
-
-*Initialized by hassan-dev — moving from P01 to P02.*
