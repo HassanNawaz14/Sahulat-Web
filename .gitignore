@@ -11,6 +11,8 @@ venv/
 .env
 .env.local
 .env.production
+backend/.env
+frontend/.env.local
 
 .vscode/
 *.log
