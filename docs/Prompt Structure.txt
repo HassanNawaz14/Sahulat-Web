@@ -1,0 +1,8 @@
+Things to add in all prompts:
+
+1) Frontend is mainly for android/ios (keep simple/user friendly)
+2) Any feature/module has mainly one purpose: to attract users, give them a useful/addtictive feature with ease of use for laymen.
+3) Anything developed should be developed in way that is best for SEO and user attractions in order to make more and faster earnings with Google Adsens.
+4) Always refer all previous parts MD files before starting a new one, al dependencies are mentioned, look if there are new ones (if you find one, update in MD file too)
+5) Always mention what you have done so far and what's next, in the README.md (in your own section developer wise).
+6) We are keeping Real Users Data, so no compromise on backend/DB safety!

@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+.env
+.env.local
+.env.production
+
+.vscode/
+*.log
+.DS_Store
