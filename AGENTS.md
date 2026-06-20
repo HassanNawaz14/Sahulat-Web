@@ -15,3 +15,15 @@ Reference these rules before every task. They define Sahulat's development philo
 5. **README developer log** — Always update the README.md in your own section documenting what was done and what's next.
 
 6. **Data security is non-negotiable** — We keep real users' data. No compromises on backend/database safety.
+
+## PITC Knowledge (Discovered June 2026)
+
+- **PITC (bill.pitc.com.pk)** hosts bill portals for ALL 9 Punjab DISCOs on the same ASP.NET backend: lesco, iesco, gepco, fesco, mepco, pesco, qesco, hesco, sepco.
+- URL pattern: `https://bill.pitc.com.pk/{disco}bill`
+- All use identical form POST with ViewState/EventValidation/RequestVerificationToken.
+- The old LESCO portal (lesco.gov.pk:36269) is dead — returns HTTP 400.
+- Reference numbers are 8-14 digit numeric (validation regex: `^\d{8,14}$`).
+- Consumer number with dashes/letters: strip dashes and letters for PITC (e.g., `13-11262-1101009-U` → `13112621101009`).
+- PITC endpoint works from Pakistan IP only (blocks international traffic).
+- Shared scraper class: `app/scrapers/electricity/pitc.py` → `PitcBillScraper(provider_code)`.
+- 9 individual scraper wrappers exist in `app/scrapers/electricity/{disco}.py`.

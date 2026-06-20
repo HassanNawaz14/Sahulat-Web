@@ -69,6 +69,9 @@ python -m uvicorn app.main:app --reload   # http://localhost:8000
 | P01  | hassan-dev     | ✅ Complete | Project overview & scope defined   |
 | P02  | hassan-dev     | ✅ Complete | Stack initialized, deps installed  |
 | P03  | hassan-dev     | ✅ Complete | 22 tables, RLS, triggers, seed data verified |
+| P04  | opencode       | ✅ Complete | Auth routes, login/verify/onboarding/settings pages |
+| P05  | opencode       | ✅ Complete | 16 scrapers (9 PITC DISCOs + KE + 2 gas + 2 water + 2 internet) + registry + cron jobs. **Key discovery:** PITC (bill.pitc.com.pk) hosts ALL 9 Punjab DISCO bill portals on same ASP.NET backend — refactored all into shared `PitcBillScraper`. Old LESCO portal (lesco.gov.pk:36269) is dead (always 400). |
+| P06  | opencode       | ✅ Complete | 13 endpoints: consumer accounts CRUD + bill fetch/dispatch + history + status update + summary. Fixed: `.single()` APIError crash (returned 500 instead of 404), `KeyError: 'sub'` when JWT lacks subject claim (anon key caused crash), PITC scraper letter stripping (`13-11262-1101009-U` → `13112621101009`), wired up APScheduler on startup, frontend `/auth/verify` Suspense boundary for SSR build, cleaned imports/type hints. |
 
 ---
 

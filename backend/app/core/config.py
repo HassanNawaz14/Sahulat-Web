@@ -5,6 +5,8 @@ class Settings(BaseSettings):
     # Supabase
     supabase_url: str = ""
     supabase_service_role_key: str = ""
+    supabase_anon_key: str = ""
+    supabase_jwt_secret: str = ""
 
     # VAPID (Web Push)
     vapid_private_key: str = ""

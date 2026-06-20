@@ -1,0 +1,45 @@
+export const CITY_DISCO_MAP: Record<string, string> = {
+  lahore: "lesco",
+  karachi: "kelectric",
+  islamabad: "iesco",
+  rawalpindi: "iesco",
+  faisalabad: "fesco",
+  multan: "mepco",
+  gujranwala: "gepco",
+  peshawar: "pesco",
+  quetta: "qesco",
+  hyderabad: "hesco",
+  sukkur: "sepco",
+}
+
+export const CITIES = [
+  "Lahore",
+  "Karachi",
+  "Islamabad",
+  "Rawalpindi",
+  "Faisalabad",
+  "Multan",
+  "Gujranwala",
+  "Peshawar",
+  "Quetta",
+  "Hyderabad",
+  "Sukkur",
+  "Other",
+]
+
+export const DISCO_NAMES: Record<string, string> = {
+  lesco: "LESCO",
+  gepco: "GEPCO",
+  fesco: "FESCO",
+  mepco: "MEPCO",
+  iesco: "IESCO",
+  pesco: "PESCO",
+  qesco: "QESCO",
+  hesco: "HESCO",
+  sepco: "SEPCO",
+  kelectric: "K-Electric",
+  sngpl: "SNGPL",
+  ssgc: "SSGC",
+  wasa_lhr: "WASA Lahore",
+  kwsb: "KW&SB Karachi",
+}
