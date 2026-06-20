@@ -17,3 +17,8 @@ frontend/.env.local
 .vscode/
 *.log
 .DS_Store
+
+# Scraper artifacts (may contain consumer PII)
+backend/*.html
+backend/pitc_*.html
+
