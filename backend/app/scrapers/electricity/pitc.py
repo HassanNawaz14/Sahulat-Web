@@ -44,6 +44,10 @@ class PitcBillScraper(BaseScraper):
         self.utility_type = "electricity"
         self.consumer_number_pattern = REF_NO_PATTERN
 
+    def validate_consumer_number(self, consumer_number: str) -> bool:
+        normalized = re.sub(r"[^0-9]", "", consumer_number.strip())
+        return super().validate_consumer_number(normalized)
+
     @property
     def _base_url(self) -> str:
         return f"https://bill.pitc.com.pk/{self.provider_code}bill"
@@ -52,7 +56,7 @@ class PitcBillScraper(BaseScraper):
         raw = consumer_number.strip()
         normalized = re.sub(r"[^0-9]", "", raw)
 
-        if not self.validate_consumer_number(normalized):
+        if not self.validate_consumer_number(raw):
             from app.scrapers.base import InvalidConsumerNumberError
             raise InvalidConsumerNumberError(
                 f"Invalid {self.provider_code.upper()} reference: {raw}"
@@ -178,6 +182,11 @@ class PitcBillScraper(BaseScraper):
                     bill.issue_date = v
                 elif "due date" in hl:
                     bill.due_date = v
+
+        if not bill.issue_date and issue_date:
+            bill.issue_date = issue_date
+        if not bill.due_date and due_date:
+            bill.due_date = due_date
 
     def _parse_consumer_table(self, tables: list, bill: ScrapedBill) -> None:
         for table in tables:

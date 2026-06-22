@@ -41,7 +41,26 @@ export const PROVIDER_LABELS: Record<string, string> = {
   sngpl: "SNGPL",
   ssgc: "SSGC",
   wasa_lhr: "WASA Lahore",
+  wasa_rwp: "WASA Rawalpindi",
+  wasa_fsd: "WASA Faisalabad",
   kwsb: "KW&SB",
   ptcl: "PTCL",
   nayatel: "Nayatel",
+  stormfiber: "StormFiber",
+  jazz_home: "Jazz Home",
+  zong_home: "Zong Home",
+}
+
+export const COMING_SOON_V2: Record<string, string[]> = {
+  electricity: ["iesco", "gepco", "fesco", "mepco", "pesco", "qesco", "hesco", "sepco"],
+  gas: [],
+  water: ["wasa_rwp", "wasa_fsd"],
+  internet: ["stormfiber", "jazz_home", "zong_home"],
+}
+
+export const UTILITY_ORDER: Record<string, number> = {
+  electricity: 0,
+  gas: 1,
+  water: 2,
+  internet: 3,
 }

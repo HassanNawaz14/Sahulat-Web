@@ -15,8 +15,14 @@ backend/.env
 frontend/.env.local
 
 .vscode/
+.idea/
 *.log
 .DS_Store
+Thumbs.db
+*.tsbuildinfo
+
+build/
+dist/
 
 # Scraper artifacts (may contain consumer PII)
 backend/*.html

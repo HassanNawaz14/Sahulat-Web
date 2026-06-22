@@ -1,13 +1,15 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Share2, RefreshCw } from "lucide-react"
+import { ArrowLeft, Share2, RefreshCw, ExternalLink } from "lucide-react"
 
 import { useConsumerAccounts, useLatestBill, useBillHistory, useFetchBill } from "@/lib/hooks/useBills"
 import { PROVIDER_LABELS, UTILITY_ICONS, STATUS_COLORS } from "@/lib/constants/utility"
 import BillTrendChart from "@/components/BillTrendChart"
 import MarkPaidButton from "@/components/MarkPaidButton"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import { buildWhatsAppShareText, openWhatsAppShare } from "@/lib/utils/whatsAppShare"
+import { buildJazzCashWebUrl, buildEasypaisaWebUrl } from "@/lib/utils/paymentDeepLink"
 
 export default function BillDetailPage() {
   const params = useParams()
@@ -34,7 +36,7 @@ export default function BillDetailPage() {
   const chartData = (history || [])
     .map((h) => ({
       month: h.billing_month
-        ? new Date(h.billing_month + "-01").toLocaleDateString("en", { month: "short", year: "2-digit" })
+        ? new Date(h.billing_month).toLocaleDateString("en", { month: "short", year: "2-digit" })
         : "?",
       amount: h.amount_payable,
     }))
@@ -62,13 +64,16 @@ export default function BillDetailPage() {
           </button>
           <button
             onClick={() => {
-              const text = encodeURIComponent(
-                `Sahulat Bill - ${PROVIDER_LABELS[account.provider_code] || account.provider_code.toUpperCase()}\n` +
-                `Amount: Rs. ${bill?.amount_payable?.toLocaleString() || "N/A"}\n` +
-                `Due: ${bill?.due_date || "N/A"}\n` +
-                `Track your bills: https://sahulat.pk`
+              if (!bill) return
+              const text = buildWhatsAppShareText(
+                PROVIDER_LABELS[account.provider_code] || account.provider_code.toUpperCase(),
+                account.account_label,
+                bill.billing_month,
+                bill.amount_payable,
+                bill.due_date,
+                bill.units_consumed,
               )
-              window.open(`https://wa.me/?text=${text}`, "_blank")
+              openWhatsAppShare(text)
             }}
             className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
           >
@@ -87,7 +92,7 @@ export default function BillDetailPage() {
           <div className="rounded-xl border bg-white p-5">
             <p className="text-xs text-gray-500">
               {bill.billing_month
-                ? new Date(bill.billing_month + "-01").toLocaleDateString("en", { month: "long", year: "numeric" })
+                ? new Date(bill.billing_month).toLocaleDateString("en", { month: "long", year: "numeric" })
                 : "Current"}{" "}
               Bill
             </p>
@@ -107,6 +112,32 @@ export default function BillDetailPage() {
             <div className="mt-4 flex gap-2">
               <MarkPaidButton billId={bill.id} currentStatus={bill.status} />
             </div>
+
+            {bill.status !== "paid" && (
+              <div className="mt-4 space-y-2">
+                <p className="text-xs font-medium text-gray-500">Pay via</p>
+                <div className="flex gap-2">
+                  <a
+                    href={buildJazzCashWebUrl(account.consumer_number, bill.amount_payable)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    JazzCash
+                  </a>
+                  <a
+                    href={buildEasypaisaWebUrl(account.consumer_number)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Easypaisa
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-4 rounded-xl border bg-white p-5">
@@ -153,7 +184,37 @@ export default function BillDetailPage() {
             </div>
           </div>
 
-          {chartData.length >= 2 && (
+          <div className="mt-4 rounded-xl border bg-white p-5">
+            <h2 className="mb-3 text-sm font-semibold">Bill History</h2>
+            {history && history.length > 0 ? (
+              <div className="space-y-2">
+                {history.slice(0, 12).map((h) => (
+                  <div key={h.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+                    <div>
+                      <p className="text-sm font-medium">
+                        {h.billing_month
+                          ? new Date(h.billing_month).toLocaleDateString("en", { month: "long", year: "numeric" })
+                          : "Unknown"}
+                      </p>
+                      {h.units_consumed != null && (
+                        <p className="text-xs text-gray-500">{h.units_consumed} kWh</p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold">Rs. {h.amount_payable.toLocaleString()}</p>
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[h.status] || "bg-gray-50 text-gray-600"}`}>
+                        {h.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No bill history yet.</p>
+            )}
+          </div>
+
+          {chartData.length >= 1 && (
             <div className="mt-4 rounded-xl border bg-white p-5">
               <h2 className="mb-3 text-sm font-semibold">6-Month Trend</h2>
               <div className="h-48">

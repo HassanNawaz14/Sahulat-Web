@@ -14,12 +14,12 @@ export default function BillTrendChart({ consumerAccountId }: Props) {
     return <div className="h-16 animate-pulse rounded bg-gray-100" />
   }
 
-  if (!history || history.length < 2) return null
+  if (!history || history.length < 1) return null
 
   const chartData = history
     .map((h) => ({
       month: h.billing_month
-        ? new Date(h.billing_month + "-01").toLocaleDateString("en", {
+        ? new Date(h.billing_month).toLocaleDateString("en", {
             month: "short",
             year: "2-digit",
           })

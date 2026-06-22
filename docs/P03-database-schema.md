@@ -83,6 +83,7 @@ CREATE TABLE public.consumer_accounts (
   utility_type        TEXT NOT NULL,           -- 'electricity' | 'gas' | 'water' | 'internet'
   provider_code       TEXT NOT NULL,           -- 'lesco' | 'gepco' | 'sngpl' | 'wasa_lhr' | 'ptcl' | etc.
   consumer_number     TEXT NOT NULL,           -- Encrypted at application layer before storage
+  provider_reference  TEXT,                    -- Encrypted provider-specific reference (e.g. PTCL Account ID)
   account_label       TEXT,                    -- User-defined: 'Main Meter', 'Solar Meter'
   is_active           BOOLEAN DEFAULT TRUE,
   last_fetched_at     TIMESTAMPTZ,

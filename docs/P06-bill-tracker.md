@@ -15,18 +15,18 @@ The Bill Tracker is the **core P0 module** of Sahulat. It enables users to add c
 
 ## 2. User-Facing Features
 
-| Feature | Priority | Description |
-|---------|----------|-------------|
-| Add consumer account | P0 | Validate + store consumer number with provider |
-| Fetch latest bill | P0 | On-demand scrape from utility portal |
-| Auto-refresh bills | P0 | Background cron refreshes all bills daily |
-| Bill history (6 months) | P0 | Chart of monthly bill amounts |
-| Bill detail view | P0 | Full breakdown: units, slabs, arrears, taxes |
-| Mark as paid | P1 | Manual status update; auto-detect via next bill's arrears = 0 |
-| Bill due date countdown | P1 | "Due in 3 days" badge on dashboard |
-| Multi-utility dashboard | P0 | All utilities in one card grid view |
-| WhatsApp share | P1 | Share bill summary as formatted text |
-| Bill export (PDF) | P2 | Premium feature — download bill history as PDF |
+| Feature                 | Priority | Description                                                   |
+| ----------------------- | -------- | ------------------------------------------------------------- |
+| Add consumer account    | P0       | Validate + store consumer number with provider                |
+| Fetch latest bill       | P0       | On-demand scrape from utility portal                          |
+| Auto-refresh bills      | P0       | Background cron refreshes all bills daily                     |
+| Bill history (6 months) | P0       | Chart of monthly bill amounts                                 |
+| Bill detail view        | P0       | Full breakdown: units, slabs, arrears, taxes                  |
+| Mark as paid            | P1       | Manual status update; auto-detect via next bill's arrears = 0 |
+| Bill due date countdown | P1       | "Due in 3 days" badge on dashboard                            |
+| Multi-utility dashboard | P0       | All utilities in one card grid view                           |
+| WhatsApp share          | P1       | Share bill summary as formatted text                          |
+| Bill export (PDF)       | P2       | Premium feature — download bill history as PDF                |
 
 ---
 
@@ -37,6 +37,7 @@ The Bill Tracker is the **core P0 module** of Sahulat. It enables users to add c
 **Frontend route:** `/settings` → "Add Utility" button → modal
 
 **Step-by-step:**
+
 1. User selects utility type (Electricity / Gas / Water / Internet) — tab selector
 2. Based on type, show provider dropdown — only V1-supported providers shown; others marked "Coming Soon"
 3. User enters consumer number — input mask applied per provider format (from `P04 §5.1` DISCO map)
@@ -47,12 +48,12 @@ The Bill Tracker is the **core P0 module** of Sahulat. It enables users to add c
 
 **Provider dropdown options by utility type (V1 only — others show "Coming Soon" badge):**
 
-| Type | V1 Options | V2+ (Coming Soon) |
-|------|-----------|------------------|
-| Electricity | LESCO, K-Electric | GEPCO, FESCO, MEPCO, IESCO, PESCO, QESCO, HESCO, SEPCO |
-| Gas | SNGPL, SSGC | — |
-| Water | WASA Lahore, KW&SB | WASA Rawalpindi, WASA Faisalabad |
-| Internet | PTCL, Nayatel | StormFiber, Jazz Home, Zong Home |
+| Type        | V1 Options         | V2+ (Coming Soon)                                      |
+| ----------- | ------------------ | ------------------------------------------------------ |
+| Electricity | LESCO, K-Electric  | GEPCO, FESCO, MEPCO, IESCO, PESCO, QESCO, HESCO, SEPCO |
+| Gas         | SNGPL, SSGC        | —                                                      |
+| Water       | WASA Lahore, KW&SB | WASA Rawalpindi, WASA Faisalabad                       |
+| Internet    | PTCL, Nayatel      | StormFiber, Jazz Home, Zong Home                       |
 
 ### 3.2 Consumer Account Card (Dashboard)
 
@@ -71,6 +72,7 @@ Each linked consumer account renders as a card on the main dashboard:
 ```
 
 **Card data pulled from:**
+
 - `consumer_accounts` — label, provider, type
 - `bills` (latest row by `billing_month`) — amount, due date, units, slab
 - `bills` (last 6 rows) — sparkline data
@@ -206,7 +208,7 @@ def parse_billing_month(issue_date_str: Optional[str]) -> date:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│ ← Back     LESCO — Main Meter          [Share] [⋮] │
+│ ← Back     LESCO — Main Meter          [Share] [⋮]  │
 ├─────────────────────────────────────────────────────┤
 │          JUNE 2025 BILL                             │
 │                                                     │
@@ -243,7 +245,10 @@ Not actual payment processing. Constructs a deep link:
 
 ```typescript
 // frontend/lib/utils/paymentDeepLink.ts
-export function buildJazzCashDeepLink(consumerNumber: string, amount: number): string {
+export function buildJazzCashDeepLink(
+  consumerNumber: string,
+  amount: number,
+): string {
   // JazzCash supports pre-filled bill payment via deep link
   return `jazzcash://pay?type=utility&consumer=${encodeURIComponent(consumerNumber)}&amount=${amount}`;
 }
@@ -262,6 +267,7 @@ Both links shown as buttons. If app not installed, falls back to web URLs for Ja
 Returns last N months of bills for the given consumer account. Used to populate the trend chart.
 
 Response shape:
+
 ```json
 {
   "consumer_account_id": "uuid",
@@ -306,6 +312,7 @@ Shown when `consumer_accounts` count = 0:
 All consumer account cards rendered in a vertical list, grouped by utility type. Order: Electricity → Gas → Water → Internet. Within each type, default home's accounts first.
 
 **Total monthly spend summary card** (top of dashboard):
+
 ```
 ┌──────────────────────────────────────────┐
 │  This Month's Utilities    Rs. 11,430    │
@@ -338,6 +345,7 @@ For V2 providers (e.g., GEPCO), if a user from Gujranwala is detected (via `prof
 Request body: `{ "status": "paid" }`
 
 Rules:
+
 - Only the bill owner can update status (RLS + user_id check in handler)
 - Auto-override: if next month's scrape shows `arrears = 0`, the previous bill status is auto-set to `paid` in the upsert logic
 - Status options: `unpaid` | `paid` | `overdue`
@@ -352,15 +360,18 @@ Rules:
 Constructs a pre-formatted WhatsApp message:
 
 ```typescript
-export function buildWhatsAppShareText(bill: Bill, account: ConsumerAccount): string {
+export function buildWhatsAppShareText(
+  bill: Bill,
+  account: ConsumerAccount,
+): string {
   return encodeURIComponent(
     `📋 *Sahulat Bill Summary*\n` +
-    `Utility: ${account.provider_code.toUpperCase()} (${account.account_label})\n` +
-    `Month: ${formatMonth(bill.billing_month)}\n` +
-    `Amount: Rs. ${bill.amount_payable.toLocaleString()}\n` +
-    `Due Date: ${formatDate(bill.due_date)}\n` +
-    `Units: ${bill.units_consumed} kWh\n\n` +
-    `Track your bills on Sahulat: https://sahulat.pk`
+      `Utility: ${account.provider_code.toUpperCase()} (${account.account_label})\n` +
+      `Month: ${formatMonth(bill.billing_month)}\n` +
+      `Amount: Rs. ${bill.amount_payable.toLocaleString()}\n` +
+      `Due Date: ${formatDate(bill.due_date)}\n` +
+      `Units: ${bill.units_consumed} kWh\n\n` +
+      `Track your bills on Sahulat: https://sahulat.pk`,
   );
 }
 
@@ -371,17 +382,17 @@ export function buildWhatsAppShareText(bill: Bill, account: ConsumerAccount): st
 
 ## 9. API Endpoints Summary
 
-| Method | Path | Description | Auth |
-|--------|------|-------------|------|
-| GET | `/api/v1/consumer-accounts` | List all user's consumer accounts | Yes |
-| POST | `/api/v1/consumer-accounts` | Add new consumer account | Yes |
-| PATCH | `/api/v1/consumer-accounts/{id}` | Update label, home assignment | Yes |
-| DELETE | `/api/v1/consumer-accounts/{id}` | Deactivate account (soft delete) | Yes |
-| POST | `/api/v1/bills/fetch/{consumer_account_id}` | On-demand bill fetch | Yes |
-| GET | `/api/v1/bills/{consumer_account_id}/latest` | Get latest bill | Yes |
-| GET | `/api/v1/bills/{consumer_account_id}/history` | Get bill history (up to 24 months) | Yes |
-| PATCH | `/api/v1/bills/{bill_id}/status` | Update bill paid/unpaid status | Yes |
-| GET | `/api/v1/bills/summary` | Aggregate this-month spend across all utilities | Yes |
+| Method | Path                                          | Description                                     | Auth |
+| ------ | --------------------------------------------- | ----------------------------------------------- | ---- |
+| GET    | `/api/v1/consumer-accounts`                   | List all user's consumer accounts               | Yes  |
+| POST   | `/api/v1/consumer-accounts`                   | Add new consumer account                        | Yes  |
+| PATCH  | `/api/v1/consumer-accounts/{id}`              | Update label, home assignment                   | Yes  |
+| DELETE | `/api/v1/consumer-accounts/{id}`              | Deactivate account (soft delete)                | Yes  |
+| POST   | `/api/v1/bills/fetch/{consumer_account_id}`   | On-demand bill fetch                            | Yes  |
+| GET    | `/api/v1/bills/{consumer_account_id}/latest`  | Get latest bill                                 | Yes  |
+| GET    | `/api/v1/bills/{consumer_account_id}/history` | Get bill history (up to 24 months)              | Yes  |
+| PATCH  | `/api/v1/bills/{bill_id}/status`              | Update bill paid/unpaid status                  | Yes  |
+| GET    | `/api/v1/bills/summary`                       | Aggregate this-month spend across all utilities | Yes  |
 
 Full request/response schemas in **P21 — API Spec**.
 
@@ -391,32 +402,34 @@ Full request/response schemas in **P21 — API Spec**.
 
 All components live in `frontend/app/(dashboard)/bills/`:
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| `ConsumerAccountCard` | `components/ConsumerAccountCard.tsx` | Dashboard bill card |
-| `BillDetailView` | `app/bills/[id]/page.tsx` | Full bill breakdown page |
-| `BillTrendChart` | `components/BillTrendChart.tsx` | Recharts bar chart, 6-month |
-| `AddUtilityModal` | `components/AddUtilityModal.tsx` | Multi-step add flow |
-| `ProviderSelector` | `components/ProviderSelector.tsx` | Utility type + provider picker |
-| `ConsumerNumberInput` | `components/ConsumerNumberInput.tsx` | Masked input with validation |
-| `DashboardSummaryCard` | `components/DashboardSummaryCard.tsx` | Total spend overview |
-| `EmptyStateCTA` | `components/EmptyStateCTA.tsx` | No-account welcome state |
+| Component              | File                                  | Purpose                        |
+| ---------------------- | ------------------------------------- | ------------------------------ |
+| `ConsumerAccountCard`  | `components/ConsumerAccountCard.tsx`  | Dashboard bill card            |
+| `BillDetailView`       | `app/bills/[id]/page.tsx`             | Full bill breakdown page       |
+| `BillTrendChart`       | `components/BillTrendChart.tsx`       | Recharts bar chart, 6-month    |
+| `AddUtilityModal`      | `components/AddUtilityModal.tsx`      | Multi-step add flow            |
+| `ProviderSelector`     | `components/ProviderSelector.tsx`     | Utility type + provider picker |
+| `ConsumerNumberInput`  | `components/ConsumerNumberInput.tsx`  | Masked input with validation   |
+| `DashboardSummaryCard` | `components/DashboardSummaryCard.tsx` | Total spend overview           |
+| `EmptyStateCTA`        | `components/EmptyStateCTA.tsx`        | No-account welcome state       |
 
 ### 10.1 React Query Keys
 
 ```typescript
 // frontend/lib/queryKeys.ts
 export const billKeys = {
-  all: ['bills'] as const,
-  byAccount: (accountId: string) => ['bills', accountId] as const,
-  history: (accountId: string, months: number) => ['bills', accountId, 'history', months] as const,
-  summary: () => ['bills', 'summary'] as const,
+  all: ["bills"] as const,
+  byAccount: (accountId: string) => ["bills", accountId] as const,
+  history: (accountId: string, months: number) =>
+    ["bills", accountId, "history", months] as const,
+  summary: () => ["bills", "summary"] as const,
 };
 ```
 
 ### 10.2 Optimistic Update on Mark Paid
 
 When user taps "Mark as Paid":
+
 1. Optimistically update local React Query cache (`status: 'paid'`)
 2. PATCH request fires in background
 3. On error: rollback cache to previous state + show toast "Update failed"
@@ -425,14 +438,14 @@ When user taps "Mark as Paid":
 
 ## 11. Error States & Edge Cases
 
-| Scenario | Handling |
-|----------|----------|
-| Portal unreachable (503) | Show "Portal temporarily unavailable. Try again later." with last-fetched timestamp |
-| No bill found | Show "No pending bill. Either already paid or not yet generated." |
-| Parsing failed | Show "Our parser may be outdated. We've been alerted and will fix it." (triggers admin alert per P05 §10) |
-| Consumer number already added | Return 409 Conflict from API; frontend shows "This consumer number is already linked to your account" |
-| Captcha detected | Show "LESCO is currently blocking automated checks. Please try in 30 minutes." |
-| Bill unchanged since last fetch | Return cached bill with `from_cache: true` flag; show "Last updated: X hours ago" |
+| Scenario                        | Handling                                                                                                  |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Portal unreachable (503)        | Show "Portal temporarily unavailable. Try again later." with last-fetched timestamp                       |
+| No bill found                   | Show "No pending bill. Either already paid or not yet generated."                                         |
+| Parsing failed                  | Show "Our parser may be outdated. We've been alerted and will fix it." (triggers admin alert per P05 §10) |
+| Consumer number already added   | Return 409 Conflict from API; frontend shows "This consumer number is already linked to your account"     |
+| Captcha detected                | Show "LESCO is currently blocking automated checks. Please try in 30 minutes."                            |
+| Bill unchanged since last fetch | Return cached bill with `from_cache: true` flag; show "Last updated: X hours ago"                         |
 
 ---
 
@@ -442,3 +455,29 @@ When user taps "Mark as Paid":
 - Bill history: `staleTime: 24 * 60 * 60 * 1000` (24 hours) — history doesn't change
 - Dashboard summary: `staleTime: 15 * 60 * 1000` (15 minutes)
 - Manual "Refresh ↺" button bypasses stale time and forces a live scrape
+
+---
+
+## 13. Recent Fixes & Changes (June 2026)
+
+| Date       | Change                                                                                          | Files                                                        |
+| ---------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| 2026-06-21 | PTCL number pattern: `^\d{7,10}$` → `^\d{11}$` (inc. area code)                                | `consumerPatterns.ts`, `ptcl.py`                              |
+| 2026-06-21 | Nayatel pattern: backend `^[A-Z0-9]{6,12}$` matches frontend `/^[A-Z0-9]{7,12}$/`; removed digit-only stripping in `ConsumerNumberInput` | `consumerPatterns.ts`, `ConsumerNumberInput.tsx`              |
+| 2026-06-21 | Exception handling: `type(e).__name__` string comparison → proper `except` clauses              | `bills.py`                                                    |
+| 2026-06-21 | `auto_paid_from_arrears`: fixed `float(None)` crash and `.eq("status", "unpaid")` wrong filter | `runner.py`                                                   |
+| 2026-06-21 | Extracted `encrypt`/`decrypt`/`parse_billing_month` from duplicated code into shared module    | `security.py` (new), `bills.py`, `runner.py`                  |
+| 2026-06-21 | `ConsumerNumberInput`: provider-aware `maxLength` from regex; strip digits only for digit-only providers; uppercase alphanumeric for Nayatel | `ConsumerNumberInput.tsx`                                     |
+| 2026-06-21 | PTCL scraper: rewritten to target `ptcl.com.pk/customer/publicbill_payment` with dynamic ASP.NET form field extraction; no more hardcoded control IDs | `ptcl.py`                                                     |
+| 2026-06-21 | Auto-trigger bill fetch after account creation in `AddUtilityModal`                            | `AddUtilityModal.tsx`                                         |
+| 2026-06-21 | Delete consumer account: added `onError` handler with timeout banner; added `ConsumerAccountCard` overflow menu button with confirmation | `ConsumerAccountCard.tsx`, `useBills.ts`                      |
+| 2026-06-21 | Soft delete: `.eq("is_active", True)` filter on list endpoint                                  | `bills.py`                                                    |
+| 2026-06-21 | Bill history list section added to bill detail page (scrollable list)                          | `bills/[id]/page.tsx`                                         |
+| 2026-06-21 | `BillTrendChart` threshold changed from `< 2` to `< 1` data points                             | `BillTrendChart.tsx`                                          |
+| 2026-06-21 | Fetch error red banner on `ConsumerAccountCard` (auto-dismiss 8s)                              | `ConsumerAccountCard.tsx`                                     |
+| 2026-06-21 | `useFetchBill.onSuccess` also invalidates `history` and `accounts` queries                     | `useBills.ts`                                                 |
+| 2026-06-21 | **"Invalid Date" fix**: `billing_month` is `YYYY-MM-01` from backend; removed `+ "-01"` from all 5 `new Date()` calls in frontend | `BillTrendChart.tsx`, `bills/[id]/page.tsx`, `whatsAppShare.ts` |
+| 2026-06-21 | **Delete button fix**: `useDeleteConsumerAccount` now has `onError` callback showing error banner with 8s auto-dismiss | `ConsumerAccountCard.tsx`, `useBills.ts`                      |
+| 2026-06-22 | PTCL false no-bill fix: parser now checks explicit bill markers before search-form detection, and `AddUtilityModal` now surfaces PTCL captcha challenges during first fetch | `ptcl.py`, `AddUtilityModal.tsx` |
+| 2026-06-22 | PTCL Account ID support: frontend can capture PTCL `Account ID` optionally, backend includes it when available, and the add/update path now retries without it on older schemas so landline-only PTCL cards still work | `AddUtilityModal.tsx`, `bills.py`, `ptcl.py`, migration `003_ptcl_provider_reference.sql` |
+| 2026-06-22 | PTCL paid-bill fix: scraper now unwraps JSON `message` payloads and captures `Status`, so `Total Due Amount = 0` / `Status = Paid` responses are accepted as bill data | `ptcl.py`, `base.py` |

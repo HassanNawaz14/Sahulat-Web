@@ -81,19 +81,33 @@ class KElectricScraper(BaseScraper):
             for row in rows:
                 text = row.get_text(strip=True)
                 if "issue date" in text.lower():
-                    bill.issue_date = self._extract_date(text)
-                elif "due date" in text.lower():
-                    bill.due_date = self._extract_date(text)
-                elif "payable" in text.lower():
-                    bill.amount_payable = self._extract_amount(text)
-                elif "unit" in text.lower() or "kwh" in text.lower():
-                    bill.units_consumed = self._extract_amount(text)
-                elif "arrear" in text.lower():
-                    bill.arrears = self._extract_amount(text)
-                elif "fc" in text.lower() or "fuel" in text.lower():
-                    bill.fc_surcharge = self._extract_amount(text)
-                elif "tax" in text.lower():
-                    bill.taxes = self._extract_amount(text)
+                    dt = self._extract_date(text)
+                    if dt:
+                        bill.issue_date = dt
+                if "due date" in text.lower():
+                    dt = self._extract_date(text)
+                    if dt:
+                        bill.due_date = dt
+                if "payable" in text.lower():
+                    amt = self._extract_amount(text)
+                    if amt:
+                        bill.amount_payable = amt
+                if "unit" in text.lower() or "kwh" in text.lower():
+                    units = self._extract_amount(text)
+                    if units:
+                        bill.units_consumed = units
+                if "arrear" in text.lower():
+                    arr = self._extract_amount(text)
+                    if arr:
+                        bill.arrears = arr
+                if "fc" in text.lower() or "fuel" in text.lower():
+                    fc = self._extract_amount(text)
+                    if fc:
+                        bill.fc_surcharge = fc
+                if "tax" in text.lower():
+                    tax = self._extract_amount(text)
+                    if tax:
+                        bill.taxes = tax
 
             name_tag = soup.find(
                 ["td", "span", "div"],
@@ -123,10 +137,14 @@ class KElectricScraper(BaseScraper):
 
     @staticmethod
     def _extract_amount(text: str) -> float | None:
-        m = re.search(r"(\d+[\.,]?\d*)", text.replace(",", ""))
+        cleaned = re.sub(r"\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b", "", text)
+        m = re.search(r"(\d+[\.,]?\d*)", cleaned.replace(",", ""))
         if m:
             try:
-                return float(m.group(1).replace(",", ""))
+                val = float(m.group(1).replace(",", ""))
+                if val < 500000 and not (m.group(1).replace(",", "").isdigit() and len(m.group(1).replace(",", "")) >= 9):
+                    return val
+                return None
             except ValueError:
                 return None
         return None

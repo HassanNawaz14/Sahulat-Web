@@ -7,6 +7,7 @@ export const billKeys = {
   accounts: () => ["consumer-accounts"] as const,
   latest: (id: string) => ["bills", id, "latest"] as const,
   history: (id: string, months?: number) => ["bills", id, "history", months ?? 6] as const,
+  comingSoonSignups: () => ["coming-soon-signups"] as const,
 }
 
 export interface ConsumerAccount {
@@ -15,7 +16,8 @@ export interface ConsumerAccount {
   utility_type: string
   provider_code: string
   consumer_number: string
-  account_label: string
+  provider_reference: string | null
+  account_label: string | null
   is_active: boolean
   last_fetched_at: string | null
   created_at: string
@@ -65,7 +67,8 @@ export function useConsumerAccounts() {
       )
       return data.consumer_accounts
     },
-    staleTime: 30_000,
+    staleTime: 30 * 60 * 1000,
+    retry: false,
   })
 }
 
@@ -80,7 +83,7 @@ export function useLatestBill(consumerAccountId: string | null) {
       return data.bill
     },
     enabled: !!consumerAccountId,
-    staleTime: 30_000,
+    staleTime: 30 * 60 * 1000,
   })
 }
 
@@ -95,7 +98,7 @@ export function useBillHistory(consumerAccountId: string | null, months = 6) {
       return data.history
     },
     enabled: !!consumerAccountId,
-    staleTime: 60_000,
+    staleTime: 24 * 60 * 60 * 1000,
   })
 }
 
@@ -106,7 +109,7 @@ export function useBillsSummary() {
       const { data } = await api.get<BillsSummary>("/bills/summary")
       return data
     },
-    staleTime: 15_000,
+    staleTime: 15 * 60 * 1000,
   })
 }
 
@@ -119,7 +122,9 @@ export function useFetchBill() {
     },
     onSuccess: (_data, accountId) => {
       queryClient.invalidateQueries({ queryKey: billKeys.latest(accountId) })
+      queryClient.invalidateQueries({ queryKey: billKeys.history(accountId) })
       queryClient.invalidateQueries({ queryKey: billKeys.summary() })
+      queryClient.invalidateQueries({ queryKey: billKeys.accounts() })
     },
   })
 }
@@ -144,6 +149,7 @@ export function useAddConsumerAccount() {
       utility_type: string
       provider_code: string
       consumer_number: string
+      provider_reference?: string
       account_label?: string
       home_id?: string
     }) => {
@@ -152,6 +158,42 @@ export function useAddConsumerAccount() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: billKeys.accounts() })
+      queryClient.invalidateQueries({ queryKey: billKeys.summary() })
     },
+  })
+}
+
+export function useDeleteConsumerAccount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (accountId: string) => {
+      const { data } = await api.delete(`/consumer-accounts/${accountId}`)
+      return data
+    },
+    onSuccess: (_data, accountId) => {
+      queryClient.setQueryData<ConsumerAccount[]>(billKeys.accounts(), (old) => {
+        if (!old) return old
+        return old.filter((a) => a.id !== accountId)
+      })
+      queryClient.invalidateQueries({ queryKey: billKeys.accounts() })
+      queryClient.invalidateQueries({ queryKey: billKeys.summary() })
+      queryClient.removeQueries({ queryKey: billKeys.latest(accountId) })
+      queryClient.removeQueries({ queryKey: billKeys.history(accountId) })
+    },
+    onError: (err: any) => {
+      console.error("Delete account failed:", err?.response?.data || err?.message || err)
+    },
+  })
+}
+
+export function useComingSoonSignups() {
+  return useQuery({
+    queryKey: billKeys.comingSoonSignups(),
+    queryFn: async ({ signal }) => {
+      const { data } = await api.get<{ signups: string[] }>("/coming-soon-signups", { signal })
+      return data.signups
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
   })
 }

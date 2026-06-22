@@ -238,9 +238,27 @@ PTCL and Nayatel offer public bill lookup without login. StormFiber, Jazz Home, 
 
 | Property | Value |
 |----------|-------|
-| Portal URL | `https://ptcl.com.pk` bill inquiry |
-| Method | `POST` |
-| Consumer number pattern | `^\d{8,11}$` |
+| Portal URL | `https://ptcl.com.pk/customer/publicbill_payment` |
+| Method | `POST` (ASP.NET ViewState, dynamic field extraction via BeautifulSoup) |
+| Consumer number pattern | `^\d{11}$` (04X + 8 digits, e.g. `04212345678`) |
+| Scraper approach | GET form → extract all ASP.NET fields dynamically → detect phone input + area code dropdown → POST with extracted ViewState → parse HTML or PDF response |
+
+**Key details:**
+- Phone number `04212345678` is split: area code `042`, local number `12345678`
+- The area code dropdown is detected by finding a `<select>` whose `<option>` values are 2–4 digit numbers matching the area code
+- The phone input is detected by finding a `<input type="text">` whose `name` attribute contains "phone", "txtphone", or "mobile"; if none found, falls back to the first visible text input
+- No Account ID required — the public bill inquiry accepts phone-only search
+- Falls back to PDF parsing (pdfplumber) if the response is `application/pdf`
+- If the response HTML still contains the search form (`_is_search_form` check), raises `NoBillFoundError` with the error message extracted from the page
+- Logs all form field names and response status for debugging
+
+**Imperfect detection (known limitation):** Since `ptcl.com.pk` blocks non-Pakistan IPs, field name heuristics cannot be verified. If the portal changes its HTML structure, the heuristics may select the wrong fields. Debug logs (`logger.info`) output the actual form field names found on each request — check backend logs to diagnose. If the scraper stops working, retarget to the fallback DBill portal at `https://dbill.ptcl.net.pk/PTCLSearchInvoice.aspx` (requires Account ID + phone number).
+
+**PTCL no-bill false positive fix (2026-06-22):** PTCL result pages can still include generic portal text like "phone number" and "public bill" even when bill data is present. The scraper now prefers explicit bill markers and explicit no-record messages, and only falls back to search-form detection when no bill content is present. This prevents real bills from being downgraded to `NoBillFoundError`.
+
+**PTCL Account ID support (2026-06-22):** The official PTCL bill inquiry page also exposes an `Account ID` field for the landline flow. Sahulat persists it as an optional provider-specific reference and includes it in the PTCL payload when available, but the normal landline flow must continue to work without it.
+
+**PTCL paid-bill payload handling (2026-06-22):** PTCL may return the bill markup inside a JSON envelope rather than as raw HTML. The scraper now unwraps `message` when the payload is JSON and also records the `Status` field so paid bills with `Total Due Amount = 0` still count as valid bill data instead of falling through to `ParsingFailedError`.
 
 ### 8.2 Nayatel (`nayatel.py`)
 

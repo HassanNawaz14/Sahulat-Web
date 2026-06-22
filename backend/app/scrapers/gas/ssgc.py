@@ -75,18 +75,34 @@ class SsgcScraper(BaseScraper):
                 cells = row.find_all(["td", "th"])
                 text = " ".join(c.get_text(strip=True) for c in cells)
 
+                if "issue date" in text.lower():
+                    dt = self._extract_date(text)
+                    if dt:
+                        bill.issue_date = dt
                 if "due date" in text.lower():
-                    bill.due_date = self._extract_date(text)
-                elif "payable" in text.lower() or "amount" in text.lower():
-                    bill.amount_payable = self._extract_amount(text)
-                elif "unit" in text.lower() or "mmbtu" in text.lower():
-                    bill.units_consumed = self._extract_amount(text)
-                elif "arrear" in text.lower():
-                    bill.arrears = self._extract_amount(text)
-                elif "tax" in text.lower():
-                    bill.taxes = self._extract_amount(text)
-                elif "late payment" in text.lower():
-                    bill.surcharges = self._extract_amount(text)
+                    dt = self._extract_date(text)
+                    if dt:
+                        bill.due_date = dt
+                if "payable" in text.lower() or "amount" in text.lower():
+                    amt = self._extract_amount(text)
+                    if amt:
+                        bill.amount_payable = amt
+                if "unit" in text.lower() or "mmbtu" in text.lower():
+                    units = self._extract_amount(text)
+                    if units:
+                        bill.units_consumed = units
+                if "arrear" in text.lower():
+                    arr = self._extract_amount(text)
+                    if arr:
+                        bill.arrears = arr
+                if "tax" in text.lower():
+                    tax = self._extract_amount(text)
+                    if tax:
+                        bill.taxes = tax
+                if "late payment" in text.lower():
+                    sur = self._extract_amount(text)
+                    if sur:
+                        bill.surcharges = sur
 
             name_tag = soup.find(
                 ["td", "span", "div"],
@@ -116,10 +132,14 @@ class SsgcScraper(BaseScraper):
 
     @staticmethod
     def _extract_amount(text: str) -> float | None:
-        m = re.search(r"(\d+[\.,]?\d*)", text.replace(",", ""))
+        cleaned = re.sub(r"\b\d{1,2}[-/]\d{1,2}[-/]\d{2,4}\b", "", text)
+        m = re.search(r"(\d+[\.,]?\d*)", cleaned.replace(",", ""))
         if m:
             try:
-                return float(m.group(1).replace(",", ""))
+                val = float(m.group(1).replace(",", ""))
+                if val < 500000 and not (m.group(1).replace(",", "").isdigit() and len(m.group(1).replace(",", "")) >= 9):
+                    return val
+                return None
             except ValueError:
                 return None
         return None

@@ -75,7 +75,9 @@ class WasaLahoreScraper(BaseScraper):
                 cells = row.find_all(["td", "th"])
                 text = " ".join(c.get_text(strip=True) for c in cells)
 
-                if "due date" in text.lower():
+                if "issue date" in text.lower():
+                    bill.issue_date = self._extract_date(text)
+                elif "due date" in text.lower():
                     bill.due_date = self._extract_date(text)
                 elif "payable" in text.lower() or "amount" in text.lower():
                     bill.amount_payable = self._extract_amount(text)

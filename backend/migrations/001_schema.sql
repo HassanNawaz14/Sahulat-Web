@@ -570,15 +570,17 @@ INSERT INTO public.budget_categories (name, icon, color, is_system) VALUES
   ('Other', 'more-horizontal', '#6B7280', TRUE)
 ON CONFLICT DO NOTHING;
 
--- Electricity tariff seed data (NEPRA residential rates as of 2025)
+-- Electricity tariff seed data (NEPRA residential rates for <=5kW load, as of 2025-2026)
 
 INSERT INTO public.electricity_tariffs (effective_date, category, slab_min, slab_max, rate_per_unit, fixed_charges) VALUES
-  ('2025-01-01', 'residential', 0,   100, 7.74,  0),
-  ('2025-01-01', 'residential', 101, 200, 10.06, 0),
-  ('2025-01-01', 'residential', 201, 300, 12.15, 0),
-  ('2025-01-01', 'residential', 301, 400, 17.64, 0),
-  ('2025-01-01', 'residential', 401, 500, 20.47, 0),
-  ('2025-01-01', 'residential', 501, 600, 22.65, 0),
-  ('2025-01-01', 'residential', 601, 700, 23.93, 0),
-  ('2025-01-01', 'residential', 701, NULL, 26.84, 0)
+  ('2025-01-01', 'residential', 0,   100, 22.44, 0),
+  ('2025-01-01', 'residential', 101, 200, 28.91, 0),
+  ('2025-01-01', 'residential', 201, 300, 33.10, 0),
+  ('2025-01-01', 'residential', 301, 400, 36.46, 0),
+  ('2025-01-01', 'residential', 401, 500, 38.95, 0),
+  ('2025-01-01', 'residential', 501, 600, 40.22, 0),
+  ('2025-01-01', 'residential', 601, 700, 41.85, 0),
+  ('2025-01-01', 'residential', 701, NULL, 47.20, 0),
+  ('2025-01-01', 'protected',   0,   100, 7.74,  0),
+  ('2025-01-01', 'protected',   101, 200, 13.01, 0)
 ON CONFLICT DO NOTHING;

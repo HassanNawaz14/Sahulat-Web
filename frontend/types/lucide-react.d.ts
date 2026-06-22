@@ -28,4 +28,6 @@ declare module "lucide-react" {
   export const X: Icon
   export const Share2: Icon
   export const RefreshCw: Icon
+  export const ExternalLink: Icon
+  export const Clock: Icon
 }

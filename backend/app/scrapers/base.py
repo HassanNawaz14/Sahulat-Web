@@ -7,6 +7,7 @@ class ScrapedBill:
     consumer_name: str = ""
     issue_date: str | None = None
     due_date: str | None = None
+    status: str | None = None
     amount_payable: float = 0.0
     units_consumed: float | None = None
     previous_reading: float | None = None
@@ -48,6 +49,7 @@ class BaseScraper(ABC):
     provider_code: str = ""
     utility_type: str = ""
     consumer_number_pattern: str = ""
+    requires_captcha: bool = False
 
     @abstractmethod
     async def fetch_bill(self, consumer_number: str) -> ScrapedBill:

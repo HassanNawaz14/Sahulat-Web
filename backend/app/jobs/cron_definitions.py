@@ -1,5 +1,29 @@
 SCHEDULED_JOBS = [
     {
+        "id": "refresh_all_bills",
+        "func": "app.jobs.runner:refresh_all_bills",
+        "trigger": "cron",
+        "hour": 7,
+        "minute": 0,
+        "timezone": "Asia/Karachi",
+    },
+    {
+        "id": "mark_overdue_bills",
+        "func": "app.jobs.runner:mark_overdue_bills",
+        "trigger": "cron",
+        "hour": 8,
+        "minute": 0,
+        "timezone": "Asia/Karachi",
+    },
+    {
+        "id": "auto_paid_from_arrears",
+        "func": "app.jobs.runner:auto_paid_from_arrears",
+        "trigger": "cron",
+        "hour": 8,
+        "minute": 30,
+        "timezone": "Asia/Karachi",
+    },
+    {
         "id": "fetch_loadshedding_pdfs",
         "func": "app.jobs.runner:fetch_loadshedding_pdfs",
         "trigger": "cron",
