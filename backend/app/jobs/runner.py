@@ -7,7 +7,9 @@ from datetime import date, datetime
 
 from app.core.security import decrypt, parse_billing_month
 from app.core.supabase import supabase
+from app.scrapers.electricity.loadshedding_pdf import DISCO_PDF_URLS
 from app.scrapers.registry import get_scraper
+from app.services import compute_confidence
 from app.services.tariff import (
     compute_electricity_bill,
     compute_marginal_cost,
@@ -199,7 +201,7 @@ async def fetch_loadshedding_pdfs():
                               target_id="no_entries")
                 continue
 
-            pdf_url = ""
+            pdf_url = DISCO_PDF_URLS.get(provider_code, "")
 
             all_rows = []
             for entry in entries:
@@ -281,8 +283,7 @@ async def compute_report_confidence():
     active = (
         supabase.table("community_outage_reports")
         .select("city, area_slug, utility_type, provider_code")
-        .is_("expires_at", None)
-        .or_("expires_at.gt.now()")
+        .or_("expires_at.is.null,expires_at.gt.now()")
         .eq("is_restored", False)
         .execute()
     )
@@ -302,10 +303,9 @@ async def compute_report_confidence():
         if count < 3:
             continue
 
-        # High confidence if 5+ reports
-        # Update all reports in this group with the computed confidence
+        confidence = compute_confidence(count)
         supabase.table("community_outage_reports").update({
-            "description": group.get("provider_code") or group["utility_type"],
+            "confidence_score": confidence,
         }).eq("city", group["city"]).eq("area_slug", group["area_slug"]).eq("utility_type", group["utility_type"]).execute()
 
 

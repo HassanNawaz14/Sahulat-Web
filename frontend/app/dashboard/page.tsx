@@ -99,6 +99,16 @@ export default function DashboardPage() {
             <span className="text-xs text-blue-400">&rarr;</span>
           </Link>
 
+          <Link
+            href="/outages"
+            className="flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 transition-colors hover:bg-amber-100"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-amber-700">Outage Tracker</span>
+            </div>
+            <span className="text-xs text-amber-400">&rarr;</span>
+          </Link>
+
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-gray-600">Your Utilities</p>
             <button

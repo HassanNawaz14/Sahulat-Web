@@ -72,9 +72,12 @@ DEFAULT_CITY_MAP: dict[str, str] = {
 
 def lookup_area(feeder_name: str) -> list[str]:
     key = feeder_name.strip().lower().replace(" ", "-")
-    for pattern, tags in FEEDER_AREA_MAP.items():
-        if pattern in key or key in pattern:
-            return tags
+    # Match by longest suffix first to avoid substring collisions
+    # e.g. "dha-r-block" should match before "block" matches something else
+    sorted_keys = sorted(FEEDER_AREA_MAP.keys(), key=len, reverse=True)
+    for pattern in sorted_keys:
+        if key.endswith(pattern) or pattern.endswith(key):
+            return FEEDER_AREA_MAP[pattern]
     return [feeder_name.strip().lower()]
 
 

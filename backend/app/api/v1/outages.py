@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -7,6 +7,7 @@ from pydantic import BaseModel, field_validator
 from app.core.auth import get_current_user
 from app.core.supabase import supabase
 from app.scrapers.common.feeder_area_map import FEEDER_AREA_MAP, default_city
+from app.services import compute_confidence
 
 router = APIRouter(prefix="/api/v1", tags=["outages"])
 
@@ -63,22 +64,10 @@ class FeederUpdate(BaseModel):
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
 
-def _compute_confidence(area_report_count: int) -> float:
-    if area_report_count >= 10:
-        return 0.92
-    if area_report_count >= 5:
-        return 0.82
-    if area_report_count >= 3:
-        return 0.65
-    if area_report_count >= 1:
-        return 0.45
-    return 0.25
-
-
 def _outage_status(start_time: str, end_time: str) -> str:
-    now = datetime.utcnow()
-    start = datetime.fromisoformat(start_time.replace("+05:00", ""))
-    end = datetime.fromisoformat(end_time.replace("+05:00", ""))
+    now = datetime.now(timezone.utc)
+    start = datetime.fromisoformat(start_time)
+    end = datetime.fromisoformat(end_time)
     if now > end:
         return "expired"
     if now >= start and now <= end:
@@ -202,8 +191,7 @@ async def get_community_reports(
     query = (
         supabase.table("community_outage_reports")
         .select("*")
-        .is_("expires_at", "null")
-        .or_("expires_at.gt.now()")
+        .or_("expires_at.is.null,expires_at.gt.now()")
         .eq("is_restored", False)
     )
 
@@ -230,7 +218,7 @@ async def get_community_reports(
                 "area": r["area"],
                 "severity": r.get("severity", "medium"),
                 "status": "active",
-                "confidence_score": _compute_confidence(1),
+                "confidence_score": compute_confidence(1),
                 "report_count": 1,
                 "created_at": r["created_at"],
                 "expires_at": r.get("expires_at"),
@@ -238,7 +226,7 @@ async def get_community_reports(
         else:
             clusters[key]["report_count"] += 1
             # Update confidence
-            clusters[key]["confidence_score"] = _compute_confidence(clusters[key]["report_count"])
+            clusters[key]["confidence_score"] = compute_confidence(clusters[key]["report_count"])
 
     return {"reports": list(clusters.values())}
 
@@ -323,7 +311,7 @@ async def create_report(
         .execute()
     )
     report_count = len(same_area.data or [])
-    confidence = _compute_confidence(report_count)
+    confidence = compute_confidence(report_count)
 
     return {
         "id": report["id"],

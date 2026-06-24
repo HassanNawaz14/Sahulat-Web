@@ -86,7 +86,7 @@ async def parse_loadshedding_pdf(
                             LoadSheddingEntry(
                                 feeder_code=feeder_code,
                                 feeder_name=feeder_name,
-                                schedule_date=date.today(),
+                                schedule_date=date.today() - timedelta(days=date.today().weekday()),
                                 slots=slots,
                             )
                         )
@@ -99,7 +99,7 @@ def normalize_schedule_row(
     pdf_url: str = "",
     raw_text: str = "",
 ) -> list[NormalizedOutageRow]:
-    """Convert a LoadSheddingEntry into one ore more NormalizedOutageRow objects.
+    """Convert a LoadSheddingEntry into one or more NormalizedOutageRow objects.
 
     One row is generated per slot per day, with start_time/end_time as ISO datetime
     strings in PKT timezone (+05:00).

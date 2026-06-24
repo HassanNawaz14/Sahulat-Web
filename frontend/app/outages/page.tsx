@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useMemo } from "react"
 import { useAuth } from "@/components/providers"
 import { useConsumerAccounts } from "@/lib/hooks/useBills"
 import {
@@ -17,7 +17,7 @@ import FeederSelector from "@/components/outages/FeederSelector"
 export default function OutagesPage() {
   const { user, isLoading: authLoading } = useAuth()
   const { data: accounts, isLoading: accountsLoading } = useConsumerAccounts()
-  const [refreshFeed, setRefreshFeed] = useState(0)
+
 
   // Pick first electricity account for schedule queries
   const electricityAccount = useMemo(() => {
@@ -41,7 +41,6 @@ export default function OutagesPage() {
 
   const handleRefreshFeed = () => {
     refetchFeed()
-    setRefreshFeed((n) => n + 1)
   }
 
   if (authLoading || accountsLoading) {
