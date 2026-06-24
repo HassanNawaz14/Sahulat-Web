@@ -339,20 +339,24 @@ async def get_consumption_summary(
         "previous_daily_rate": previous_daily_rate,
     }
 
-    # Slab info
-    total_units = response["total_units_so_far"]
-    slabs = get_active_tariffs(account["provider_code"], category)
-    current_slab = get_current_slab(total_units, slabs)
-    next_slab = get_next_slab(current_slab, slabs) if current_slab else None
-    units_to_next = None
-    if current_slab and current_slab["max"] is not None:
-        units_to_next = max(0, current_slab["max"] - total_units + 1)
-    response["current_slab"] = current_slab
-    response["next_slab"] = {
-        "threshold": next_slab["min"],
-        "rate": next_slab["rate"],
-        "units_away": units_to_next,
-    } if next_slab and units_to_next is not None else None
+    # Slab info (electricity only — gas/water have no slab structure in tariff table)
+    if account["utility_type"] == "electricity":
+        total_units = response["total_units_so_far"]
+        slabs = get_active_tariffs(account["provider_code"], category)
+        current_slab = get_current_slab(total_units, slabs)
+        next_slab = get_next_slab(current_slab, slabs) if current_slab else None
+        units_to_next = None
+        if current_slab and current_slab["max"] is not None:
+            units_to_next = max(0, current_slab["max"] - total_units + 1)
+        response["current_slab"] = current_slab
+        response["next_slab"] = {
+            "threshold": next_slab["min"],
+            "rate": next_slab["rate"],
+            "units_away": units_to_next,
+        } if next_slab and units_to_next is not None else None
+    else:
+        response["current_slab"] = None
+        response["next_slab"] = None
 
     # Last reading
     if readings:
@@ -376,6 +380,25 @@ async def get_consumption_summary(
     else:
         response["consumption_change_pct"] = None
         response["consumption_trend"] = None
+
+    # Seasonal comparison — same month last year
+    same_month_last_year_units = None
+    last_year_same_month = cycle_start.replace(year=cycle_start.year - 1)
+    if last_year_same_month <= date.today():
+        try:
+            last_year_result = (
+                supabase.table("bills")
+                .select("units_consumed")
+                .eq("consumer_account_id", consumer_account_id)
+                .eq("billing_month", last_year_same_month.isoformat())
+                .single()
+                .execute()
+            )
+            if last_year_result.data and last_year_result.data.get("units_consumed") is not None:
+                same_month_last_year_units = float(last_year_result.data["units_consumed"])
+        except APIError:
+            pass
+    response["same_month_last_year_units"] = same_month_last_year_units
 
     return response
 

@@ -64,3 +64,9 @@ export const UTILITY_ORDER: Record<string, number> = {
   water: 2,
   internet: 3,
 }
+
+export const UNIT_LABELS: Record<string, { unit: string; rate: string }> = {
+  electricity: { unit: "kWh", rate: "kWh/day" },
+  gas: { unit: "MMBtu", rate: "MMBtu/day" },
+  water: { unit: "Units", rate: "Units/day" },
+}

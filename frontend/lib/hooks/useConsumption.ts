@@ -41,6 +41,7 @@ export interface ConsumptionSummary {
   consumption_change_pct: number | null
   consumption_trend: "up" | "down" | "stable" | null
   latest_reading_snapshot: LatestReadingSnapshot | null
+  same_month_last_year_units: number | null
 }
 
 export interface MeterReading {

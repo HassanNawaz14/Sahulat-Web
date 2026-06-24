@@ -172,29 +172,62 @@ async def auto_paid_from_arrears():
             }).eq("id", prev.data[0]["id"]).execute()
 
 
+# Providers to parse loadshedding PDFs for (start with LESCO only, expand in V2)
+LOADSHEDDING_PROVIDERS = ["lesco"]
+
+
 async def fetch_loadshedding_pdfs():
+    """Download and parse DISCO loadshedding PDFs, upsert into outage_schedules.
+
+    Runs Monday 09:00 PKT. Only processes LESCO in V1.
+    """
+    from app.scrapers.electricity.loadshedding_pdf import (
+        parse_loadshedding_pdf,
+        normalize_schedule_row,
+        upsert_outage_schedules,
+    )
+
     start = time.monotonic()
-    try:
-        from app.scrapers.electricity.loadshedding_pdf import parse_loadshedding_pdf
+    total_upserted = 0
+    total_failed = 0
 
-        entries = await parse_loadshedding_pdf("lesco")
-        for entry in entries:
-            supabase.table("outage_schedules").upsert({
-                "provider_code": "lesco",
-                "feeder_code": entry.feeder_code,
-                "feeder_name": entry.feeder_name,
-                "area_tags": [],
-                "city": "lahore",
-                "schedule_date": entry.schedule_date.isoformat(),
-                "slots": entry.slots,
-                "week_start": entry.schedule_date.isoformat(),
-            }).execute()
+    for provider_code in LOADSHEDDING_PROVIDERS:
+        try:
+            entries = await parse_loadshedding_pdf(provider_code)
+            if not entries:
+                await log_run(provider_code, "loadshedding_pdf", "missing",
+                              target_id="no_entries")
+                continue
 
-        duration = int((time.monotonic() - start) * 1000)
-        await log_run("lesco", "loadshedding_pdf", "success", duration_ms=duration)
-    except Exception as e:
-        duration = int((time.monotonic() - start) * 1000)
-        await log_run("lesco", "loadshedding_pdf", "failed", error_message=str(e), duration_ms=duration)
+            pdf_url = ""
+
+            all_rows = []
+            for entry in entries:
+                rows = normalize_schedule_row(entry, provider_code, pdf_url=pdf_url)
+                all_rows.extend(rows)
+
+            if all_rows:
+                count = upsert_outage_schedules(all_rows, source_url=pdf_url)
+                total_upserted += count
+
+            await log_run(provider_code, "loadshedding_pdf", "success",
+                          target_id=f"upserted={len(all_rows)}",
+                          duration_ms=int((time.monotonic() - start) * 1000))
+
+        except Exception as e:
+            total_failed += 1
+            await log_run(provider_code, "loadshedding_pdf", "failed",
+                          error_message=str(e),
+                          duration_ms=int((time.monotonic() - start) * 1000))
+
+    if total_failed == 0:
+        await log_run("system", "loadshedding_pdf_batch", "success",
+                       target_id=f"total_upserted={total_upserted}",
+                       duration_ms=int((time.monotonic() - start) * 1000))
+    else:
+        await log_run("system", "loadshedding_pdf_batch", "partial",
+                       target_id=f"upserted={total_upserted},failed={total_failed}",
+                       duration_ms=int((time.monotonic() - start) * 1000))
 
 
 async def fetch_nepra_tariffs():
@@ -233,10 +266,47 @@ async def send_outage_notifications():
     pass
 
 
-async def cleanup_old_reports():
+async def expire_community_reports():
+    """Mark or delete expired community outage reports (runs every 15 min)."""
     supabase.table("community_outage_reports").delete().lt(
         "expires_at", "now()"
     ).execute()
+
+
+async def compute_report_confidence():
+    """Recompute confidence scores for active community outage reports (runs every 5 min).
+
+    Confidence is based on report_count and scheduled outage overlap.
+    """
+    active = (
+        supabase.table("community_outage_reports")
+        .select("city, area_slug, utility_type, provider_code")
+        .is_("expires_at", None)
+        .or_("expires_at.gt.now()")
+        .eq("is_restored", False)
+        .execute()
+    )
+    if not active.data:
+        return
+
+    # Group by city + area_slug + utility_type
+    groups: dict[str, dict] = {}
+    for r in active.data:
+        key = f"{r['city']}|{r['area_slug']}|{r['utility_type']}"
+        if key not in groups:
+            groups[key] = {"count": 0, "city": r["city"], "area_slug": r["area_slug"], "utility_type": r["utility_type"], "provider_code": r.get("provider_code")}
+        groups[key]["count"] += 1
+
+    for key, group in groups.items():
+        count = group["count"]
+        if count < 3:
+            continue
+
+        # High confidence if 5+ reports
+        # Update all reports in this group with the computed confidence
+        supabase.table("community_outage_reports").update({
+            "description": group.get("provider_code") or group["utility_type"],
+        }).eq("city", group["city"]).eq("area_slug", group["area_slug"]).eq("utility_type", group["utility_type"]).execute()
 
 
 async def bill_due_date_alerts():

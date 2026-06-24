@@ -5,13 +5,16 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts"
 import type { MeterReading } from "@/lib/hooks/useConsumption"
+import { UNIT_LABELS } from "@/lib/constants/utility"
 
 interface Props {
   readings: MeterReading[]
   cycleStart: string | null
+  utilityType?: string
 }
 
-export default function IntraCycleReadingsChart({ readings, cycleStart }: Props) {
+export default function IntraCycleReadingsChart({ readings, cycleStart, utilityType = "electricity" }: Props) {
+  const labels = UNIT_LABELS[utilityType] ?? UNIT_LABELS.electricity
   const { chartData, readingMax, rateMax } = useMemo(() => {
     if (!cycleStart || readings.length === 0) return { chartData: [] as any[], readingMax: 350, rateMax: 10 }
     const start = new Date(cycleStart).getTime()
@@ -54,7 +57,7 @@ export default function IntraCycleReadingsChart({ readings, cycleStart }: Props)
       <h2 className="mb-1 text-sm font-semibold">This Cycle&apos;s Readings</h2>
       <p className="mb-3 text-[10px] text-gray-400">Meter reading and daily consumption within the billing cycle</p>
 
-      <p className="mb-1 text-xs font-medium text-blue-600">Meter Reading (kWh)</p>
+      <p className="mb-1 text-xs font-medium text-blue-600">Meter Reading ({labels.unit})</p>
       <ResponsiveContainer width="100%" height={180}>
         <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -72,7 +75,7 @@ export default function IntraCycleReadingsChart({ readings, cycleStart }: Props)
         </LineChart>
       </ResponsiveContainer>
 
-      <p className="mb-1 mt-4 text-xs font-medium text-green-600">Consumption Rate (kWh/day)</p>
+      <p className="mb-1 mt-4 text-xs font-medium text-green-600">Consumption Rate ({labels.rate})</p>
       {hasRate ? (
         <ResponsiveContainer width="100%" height={180}>
           <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -81,7 +84,7 @@ export default function IntraCycleReadingsChart({ readings, cycleStart }: Props)
             <YAxis domain={[0, rateMax]} stroke="#16a34a" tick={{ fontSize: 10, fill: "#16a34a" }} width={50} />
             <Tooltip
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
-              formatter={(value: number) => [`${value.toFixed(1)} kWh/day`]}
+              formatter={(value: number) => [`${value.toFixed(1)} ${labels.rate}`]}
             />
             <Line
               type="monotone"

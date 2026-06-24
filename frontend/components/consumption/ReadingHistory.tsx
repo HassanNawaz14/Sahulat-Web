@@ -4,12 +4,15 @@ import { useState } from "react"
 
 import type { MeterReading } from "@/lib/hooks/useConsumption"
 import { useDeleteReading } from "@/lib/hooks/useConsumption"
+import { UNIT_LABELS } from "@/lib/constants/utility"
 
 interface Props {
   readings: MeterReading[]
+  utilityType?: string
 }
 
-export default function ReadingHistory({ readings }: Props) {
+export default function ReadingHistory({ readings, utilityType = "electricity" }: Props) {
+  const labels = UNIT_LABELS[utilityType] ?? UNIT_LABELS.electricity
   const [deleting, setDeleting] = useState<string | null>(null)
 
   const firstReading = readings?.[readings.length - 1]
@@ -46,10 +49,10 @@ export default function ReadingHistory({ readings }: Props) {
             </div>
             <div className="flex items-center gap-3 text-xs">
               {r.units_since_last != null && (
-                <span className="font-medium text-blue-600">+{r.units_since_last} kWh</span>
+                <span className="font-medium text-blue-600">+{r.units_since_last} {labels.unit}</span>
               )}
               {r.consumption_rate != null && (
-                <span className="font-medium text-green-600">{r.consumption_rate} kWh/day</span>
+                <span className="font-medium text-green-600">{r.consumption_rate} {labels.rate}</span>
               )}
               {r.estimated_bill != null && (
                 <span className="text-gray-500">

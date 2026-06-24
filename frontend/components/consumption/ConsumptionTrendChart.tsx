@@ -5,6 +5,7 @@ import type { TrendPoint } from "@/lib/hooks/useConsumption"
 
 interface Props {
   data: TrendPoint[]
+  unitLabel?: string
 }
 
 function getBarColor(units: number | null): string {
@@ -15,7 +16,7 @@ function getBarColor(units: number | null): string {
   return "#ef4444"
 }
 
-export default function ConsumptionTrendChart({ data }: Props) {
+export default function ConsumptionTrendChart({ data, unitLabel = "kWh" }: Props) {
   if (!data || data.length === 0) {
     return (
       <div className="rounded-xl border bg-white p-5 text-center text-sm text-gray-400">
@@ -43,7 +44,7 @@ export default function ConsumptionTrendChart({ data }: Props) {
             <Tooltip
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
               formatter={(value: number, name: string) => [
-                `${value.toFixed(0)} kWh`,
+                `${value.toFixed(0)} ${unitLabel}`,
                 name === "units" ? "Units" : "Amount",
               ]}
             />

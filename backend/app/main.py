@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.auth import router as auth_router
 from app.api.v1.bills import router as bills_router
 from app.api.v1.consumption import router as consumption_router
+from app.api.v1.estimates import router as estimates_router
+from app.api.v1.outages import router as outages_router
 from app.jobs.cron_definitions import start_scheduler
 
 app = FastAPI(title="Sahulat API", version="0.1.0")
@@ -19,6 +21,8 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(bills_router)
 app.include_router(consumption_router)
+app.include_router(estimates_router)
+app.include_router(outages_router)
 
 
 @app.on_event("startup")

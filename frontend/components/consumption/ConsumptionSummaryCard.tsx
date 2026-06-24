@@ -1,13 +1,16 @@
 "use client"
 
 import type { ConsumptionSummary } from "@/lib/hooks/useConsumption"
+import { UNIT_LABELS } from "@/lib/constants/utility"
 import SlabProgressBar from "./SlabProgressBar"
 
 interface Props {
   summary: ConsumptionSummary
+  utilityType?: string
 }
 
-export default function ConsumptionSummaryCard({ summary }: Props) {
+export default function ConsumptionSummaryCard({ summary, utilityType = "electricity" }: Props) {
+  const labels = UNIT_LABELS[utilityType] ?? UNIT_LABELS.electricity
   const snap = summary.latest_reading_snapshot
 
   return (
@@ -36,13 +39,15 @@ export default function ConsumptionSummaryCard({ summary }: Props) {
           </p>
           <p className="text-xs text-gray-500">latest entry</p>
         </div>
-        <div>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wide">Est. Bill</p>
-          <p className="text-xl font-bold text-blue-600">
-            Rs. {summary.estimated_bill.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-          </p>
-          <p className="text-xs text-gray-500">projected</p>
-        </div>
+        {summary.estimated_bill > 0 && (
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Est. Bill</p>
+            <p className="text-xl font-bold text-blue-600">
+              Rs. {summary.estimated_bill.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </p>
+            <p className="text-xs text-gray-500">projected</p>
+          </div>
+        )}
       </div>
 
       {summary.last_reading && (
@@ -68,8 +73,8 @@ export default function ConsumptionSummaryCard({ summary }: Props) {
 
       {summary.total_units_so_far > 0 && (
         <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
-          <span>Cycle total: <strong>{summary.total_units_so_far}</strong> kWh</span>
-          <span>Daily avg: <strong>{summary.daily_rate}</strong> kWh/day</span>
+          <span>Cycle total: <strong>{summary.total_units_so_far}</strong> {labels.unit}</span>
+          <span>Daily avg: <strong>{summary.daily_rate}</strong> {labels.rate}</span>
         </div>
       )}
 
@@ -79,13 +84,13 @@ export default function ConsumptionSummaryCard({ summary }: Props) {
           {summary.previous_daily_rate != null && (
             <div className="text-center">
               <p className="text-xs text-gray-500">Prev daily rate</p>
-              <p className="text-sm font-semibold">{summary.previous_daily_rate.toFixed(1)} kWh/day</p>
+              <p className="text-sm font-semibold">{summary.previous_daily_rate.toFixed(1)} {labels.rate}</p>
             </div>
           )}
           {summary.daily_rate > 0 && (
             <div className="text-center">
               <p className="text-xs text-gray-500">Current daily rate</p>
-              <p className="text-sm font-semibold">{summary.daily_rate.toFixed(1)} kWh/day</p>
+              <p className="text-sm font-semibold">{summary.daily_rate.toFixed(1)} {labels.rate}</p>
             </div>
           )}
           {summary.consumption_change_pct != null && (
@@ -100,7 +105,12 @@ export default function ConsumptionSummaryCard({ summary }: Props) {
         </div>
         {summary.previous_total_units != null && summary.total_units_so_far > 0 && (
           <p className="mt-1.5 text-[10px] text-gray-400">
-            {summary.total_units_so_far} kWh this cycle vs {summary.previous_total_units} kWh last month
+            {summary.total_units_so_far} {labels.unit} this cycle vs {summary.previous_total_units} {labels.unit} last month
+          </p>
+        )}
+        {summary.same_month_last_year_units != null && (
+          <p className="mt-1.5 text-[10px] text-gray-400">
+            Same month last year: <strong>{summary.same_month_last_year_units}</strong> {labels.unit}
           </p>
         )}
       </div>

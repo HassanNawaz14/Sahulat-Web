@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSubmitReading } from "@/lib/hooks/useConsumption"
+import { UNIT_LABELS } from "@/lib/constants/utility"
 
 interface TrajectoryShift {
   before: { total_units: number; daily_rate: number; projected_units: number; estimated_bill: number }
@@ -15,9 +16,11 @@ interface Props {
   onSuccess?: () => void
   consumptionChangePct?: number | null
   consumptionTrend?: "up" | "down" | "stable" | null
+  utilityType?: string
 }
 
-export default function ReadingEntryForm({ consumerAccountId, billUnitsConsumed, lastReading, onSuccess, consumptionChangePct, consumptionTrend }: Props) {
+export default function ReadingEntryForm({ consumerAccountId, billUnitsConsumed, lastReading, onSuccess, consumptionChangePct, consumptionTrend, utilityType = "electricity" }: Props) {
+  const labels = UNIT_LABELS[utilityType] ?? UNIT_LABELS.electricity
   const [value, setValue] = useState("")
   const [date, setDate] = useState(new Date().toISOString().split("T")[0])
   const [showGuide, setShowGuide] = useState(false)
@@ -96,7 +99,7 @@ export default function ReadingEntryForm({ consumerAccountId, billUnitsConsumed,
               inputMode="numeric"
               className="w-full rounded-lg border border-gray-200 p-3 text-center text-2xl font-bold tracking-wider"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">kWh</span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">{labels.unit}</span>
           </div>
         </div>
         <div>
@@ -131,7 +134,7 @@ export default function ReadingEntryForm({ consumerAccountId, billUnitsConsumed,
       {submitReading.data && (
         <div className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700">
           <p>
-            Saved! Units since last entry: <strong>{submitReading.data.units_since_last}</strong> kWh
+            Saved! Units since last entry: <strong>{submitReading.data.units_since_last}</strong> {labels.unit}
           </p>
           {submitReading.data.estimated_bill && (
             <p className="mt-0.5">
@@ -143,12 +146,12 @@ export default function ReadingEntryForm({ consumerAccountId, billUnitsConsumed,
               <p className="font-semibold text-green-800">Trajectory Change</p>
               <div className="mt-1 flex items-center gap-3">
                 <span className="text-green-600">
-                  Before: {submitReading.data.trajectory_shift.before.daily_rate.toFixed(1)} kWh/day &rarr; Rs.{" "}
+                  Before: {submitReading.data.trajectory_shift.before.daily_rate.toFixed(1)} {labels.rate} &rarr; Rs.{" "}
                   {submitReading.data.trajectory_shift.before.estimated_bill.toLocaleString()}
                 </span>
                 <span className="text-gray-400">|</span>
                 <span className="text-green-600">
-                  After: {submitReading.data.trajectory_shift.after.daily_rate.toFixed(1)} kWh/day &rarr; Rs.{" "}
+                  After: {submitReading.data.trajectory_shift.after.daily_rate.toFixed(1)} {labels.rate} &rarr; Rs.{" "}
                   {submitReading.data.trajectory_shift.after.estimated_bill.toLocaleString()}
                 </span>
               </div>

@@ -30,4 +30,18 @@ declare module "lucide-react" {
   export const RefreshCw: Icon
   export const ExternalLink: Icon
   export const Clock: Icon
+  export const BarChart3: Icon
+  export const Wallet: Icon
+  export const CreditCard: Icon
+  export const MapPin: Icon
+  export const Calculator: Icon
+  export const ArrowRight: Icon
+  export const LayoutDashboard: Icon
+
+  // Outage Tracker (P09)
+  export const CircleAlert: Icon
+  export const CircleCheck: Icon
+  export const Search: Icon
+  export const AlertCircle: Icon
+  export const TriangleAlert: Icon
 }
