@@ -21,6 +21,8 @@ export interface ConsumerAccount {
   is_active: boolean
   last_fetched_at: string | null
   created_at: string
+  city?: string
+  area?: string
 }
 
 export interface Bill {
@@ -117,7 +119,7 @@ export function useFetchBill() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (consumerAccountId: string) => {
-      const { data } = await api.post(`/bills/fetch/${consumerAccountId}`)
+      const { data } = await api.post(`/bills/fetch/${consumerAccountId}`, null, { timeout: 120000 })
       return data
     },
     onSuccess: (_data, accountId) => {

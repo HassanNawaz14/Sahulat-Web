@@ -1,6 +1,7 @@
 """Background job runners. Each function is called by APScheduler on its cron schedule."""
 
 import asyncio
+import calendar
 import random
 import time
 from datetime import date, datetime
@@ -181,6 +182,7 @@ LOADSHEDDING_PROVIDERS = ["lesco"]
 async def fetch_loadshedding_pdfs():
     """Download and parse DISCO loadshedding PDFs, upsert into outage_schedules.
 
+    Returns dict with status and result details.
     Runs Monday 09:00 PKT. Only processes LESCO in V1.
     """
     from app.scrapers.electricity.loadshedding_pdf import (
@@ -192,6 +194,7 @@ async def fetch_loadshedding_pdfs():
     start = time.monotonic()
     total_upserted = 0
     total_failed = 0
+    errors: list[str] = []
 
     for provider_code in LOADSHEDDING_PROVIDERS:
         try:
@@ -199,6 +202,7 @@ async def fetch_loadshedding_pdfs():
             if not entries:
                 await log_run(provider_code, "loadshedding_pdf", "missing",
                               target_id="no_entries")
+                errors.append(f"{provider_code}: no entries parsed from PDF")
                 continue
 
             pdf_url = DISCO_PDF_URLS.get(provider_code, "")
@@ -211,6 +215,8 @@ async def fetch_loadshedding_pdfs():
             if all_rows:
                 count = upsert_outage_schedules(all_rows, source_url=pdf_url)
                 total_upserted += count
+            else:
+                errors.append(f"{provider_code}: {len(entries)} entries produced 0 normalized rows")
 
             await log_run(provider_code, "loadshedding_pdf", "success",
                           target_id=f"upserted={len(all_rows)}",
@@ -218,18 +224,27 @@ async def fetch_loadshedding_pdfs():
 
         except Exception as e:
             total_failed += 1
+            errors.append(f"{provider_code}: {e}")
             await log_run(provider_code, "loadshedding_pdf", "failed",
                           error_message=str(e),
                           duration_ms=int((time.monotonic() - start) * 1000))
 
-    if total_failed == 0:
+    if total_failed == 0 and not errors:
         await log_run("system", "loadshedding_pdf_batch", "success",
                        target_id=f"total_upserted={total_upserted}",
                        duration_ms=int((time.monotonic() - start) * 1000))
-    else:
+        return {"status": "ok", "total_upserted": total_upserted}
+    elif total_upserted > 0:
         await log_run("system", "loadshedding_pdf_batch", "partial",
                        target_id=f"upserted={total_upserted},failed={total_failed}",
                        duration_ms=int((time.monotonic() - start) * 1000))
+        return {"status": "ok", "total_upserted": total_upserted, "warnings": errors}
+    else:
+        await log_run("system", "loadshedding_pdf_batch", "failed",
+                       target_id=f"upserted=0",
+                       error_message="; ".join(errors),
+                       duration_ms=int((time.monotonic() - start) * 1000))
+        return {"status": "error", "error": "; ".join(errors)}
 
 
 async def fetch_nepra_tariffs():
@@ -261,7 +276,64 @@ async def refresh_isp_packages():
 
 
 async def solar_data_sync():
-    pass
+    """Sync production data for all solar installations with API credentials. Runs every 30 min."""
+    start = time.monotonic()
+    installations = (
+        supabase.table("solar_installations")
+        .select("*")
+        .is_("api_username_encrypted", "not", None)
+        .is_("api_password_encrypted", "not", None)
+        .execute()
+    ).data or []
+
+    if not installations:
+        return {"status": "ok", "synced": 0}
+
+    today = date.today()
+    synced = 0
+    errors = []
+
+    for inst in installations:
+        try:
+            username = decrypt(inst.get("api_username_encrypted", ""))
+            password = decrypt(inst.get("api_password_encrypted", ""))
+            if not username or not password:
+                continue
+
+            brand = inst.get("inverter_brand", "").lower()
+            if brand == "growatt":
+                from app.services.solar.growatt import GrowattAdapter
+                from app.services.solar.base import SolarCredentials
+                adapter = GrowattAdapter()
+                credentials = SolarCredentials(username=username, password=password, plant_id=inst.get("api_token_encrypted"))
+                auth = await adapter.authenticate(credentials)
+                if not auth.success:
+                    continue
+
+                production = await adapter.fetch_daily_production(inst, today)
+                payload = {
+                    "solar_installation_id": inst["id"],
+                    "reading_date": production.date.isoformat() if hasattr(production.date, "isoformat") else str(production.date),
+                    "energy_produced_kwh": production.production_kwh,
+                    "energy_consumed_kwh": production.self_consumed_kwh,
+                    "energy_exported_kwh": production.exported_kwh,
+                    "energy_imported_kwh": production.imported_kwh,
+                    "peak_power_kw": production.peak_power_kw,
+                }
+                supabase.table("solar_production_readings").upsert(payload, on_conflict="solar_installation_id, reading_date").execute()
+                supabase.table("solar_installations").update({"last_synced_at": datetime.utcnow().isoformat()}).eq("id", inst["id"]).execute()
+                synced += 1
+            elif brand in ("solis", "huawei"):
+                continue
+        except Exception as e:
+            errors.append(f"{inst.get('id', 'unknown')}: {str(e)}")
+            continue
+
+    duration = int((time.monotonic() - start) * 1000)
+    await log_run("solar", "solar_data_sync", "success" if not errors else "partial",
+                  target_id=f"synced={synced}", error_message="; ".join(errors) if errors else None,
+                  duration_ms=duration)
+    return {"status": "ok" if not errors else "partial", "synced": synced, "errors": errors}
 
 
 async def send_outage_notifications():
@@ -269,8 +341,11 @@ async def send_outage_notifications():
 
 
 async def expire_community_reports():
-    """Mark or delete expired community outage reports (runs every 15 min)."""
-    supabase.table("community_outage_reports").delete().lt(
+    """Mark expired community outage reports as restored (soft delete, runs every 15 min)."""
+    supabase.table("community_outage_reports").update({
+        "is_restored": True,
+        "restored_at": datetime.utcnow().isoformat(),
+    }).lt(
         "expires_at", "now()"
     ).execute()
 
@@ -395,5 +470,198 @@ async def slab_boundary_check():
                     "cost_if_crossed": cost,
                 }).execute()
                 break
+        except Exception:
+            continue
+
+
+# ─── P19 Notification Jobs ─────────────────────────────────────────────────────
+
+
+async def check_bill_due_notifications():
+    """Send bill due reminders for bills due in 3 days and today. Runs daily at 08:00 PKT."""
+    from app.services.notifications.scheduler import check_and_send_notifications, get_users_with_upcoming_bills, get_users_with_bills_due_today
+
+    # Bills due in 3 days
+    upcoming = get_users_with_upcoming_bills(days_ahead=3)
+    user_ids_3d = list({b["user_id"] for b in upcoming})
+
+    def kwargs_fn_3d(uid: str) -> dict | None:
+        user_bills = [b for b in upcoming if b["user_id"] == uid]
+        if not user_bills:
+            return None
+        bill = user_bills[0]
+        return {
+            "provider": bill.get("provider_code", "").upper(),
+            "amount": str(bill.get("amount_payable", 0)),
+            "due_date": bill.get("due_date", ""),
+        }
+
+    check_and_send_notifications("bill_due_3_days", user_ids_3d, kwargs_fn_3d, rate_limit_per_day=2)
+
+    # Bills due today
+    due_today = get_users_with_bills_due_today()
+    user_ids_today = list({b["user_id"] for b in due_today})
+
+    def kwargs_fn_today(uid: str) -> dict | None:
+        user_bills = [b for b in due_today if b["user_id"] == uid]
+        if not user_bills:
+            return None
+        bill = user_bills[0]
+        return {
+            "provider": bill.get("provider_code", "").upper(),
+            "amount": str(bill.get("amount_payable", 0)),
+        }
+
+    check_and_send_notifications("bill_due_today", user_ids_today, kwargs_fn_today, rate_limit_per_day=2)
+
+    await log_run("system", "bill_due_notifications", "success",
+                   target_id=f"due_3d={len(user_ids_3d)},due_today={len(user_ids_today)}")
+
+
+async def check_budget_alerts():
+    """Check all users' budget status and send warnings/exceeded alerts. Runs daily at 21:00 PKT."""
+    from app.services.notifications.scheduler import check_and_send_notifications, get_users_at_budget_threshold
+
+    # 80% warning
+    warning_users = get_users_at_budget_threshold(0.8)
+
+    def kwargs_fn_80(uid: str) -> dict | None:
+        matches = [u for u in warning_users if u["user_id"] == uid]
+        if not matches:
+            return None
+        m = matches[0]
+        return {"percent": str(m["percent"]), "category": m["category"]}
+
+    warning_ids = list({u["user_id"] for u in warning_users})
+    check_and_send_notifications("budget_80_percent", warning_ids, kwargs_fn_80, rate_limit_per_day=1)
+
+    # 100% exceeded
+    exceeded_users = get_users_at_budget_threshold(1.0)
+
+    def kwargs_fn_100(uid: str) -> dict | None:
+        matches = [u for u in exceeded_users if u["user_id"] == uid]
+        if not matches:
+            return None
+        m = matches[0]
+        return {"category": m["category"]}
+
+    exceeded_ids = list({u["user_id"] for u in exceeded_users})
+    check_and_send_notifications("budget_exceeded", exceeded_ids, kwargs_fn_100, rate_limit_per_day=1)
+
+    await log_run("system", "budget_alerts", "success",
+                   target_id=f"warning={len(warning_ids)},exceeded={len(exceeded_ids)}")
+
+
+async def check_slab_boundary_notifications():
+    """Send slab boundary warnings. Runs daily at 20:00 PKT."""
+    from app.services.notifications.scheduler import check_and_send_notifications
+
+    accounts = (
+        supabase.table("consumer_accounts")
+        .select("id, user_id, provider_code")
+        .eq("is_active", True)
+        .eq("utility_type", "electricity")
+        .execute()
+    )
+
+    slab_candidates: dict[str, dict] = {}
+    for account in (accounts.data or []):
+        try:
+            readings = (
+                supabase.table("meter_readings")
+                .select("units_since_last")
+                .eq("consumer_account_id", account["id"])
+                .order("reading_date", desc=True)
+                .limit(1)
+                .execute()
+            )
+            if not readings.data:
+                continue
+
+            last_reading = readings.data[0]
+            units_since_last = float(last_reading.get("units_since_last") or 0)
+            if units_since_last < 10:
+                continue
+
+            from app.services.tariff import get_active_tariffs, get_current_slab
+
+            slabs = get_active_tariffs(account["provider_code"])
+            current_slab = get_current_slab(units_since_last, slabs)
+            if current_slab is None or current_slab.get("max") is None:
+                continue
+
+            units_to_next = current_slab["max"] - units_since_last + 1
+            if 0 < units_to_next <= 10:
+                slab_candidates[account["user_id"]] = {
+                    "units": str(int(units_since_last)),
+                    "remaining": str(int(units_to_next)),
+                    "rate": str(current_slab.get("rate", 0)),
+                }
+        except Exception:
+            continue
+
+    def kwargs_fn(uid: str) -> dict | None:
+        info = slab_candidates.get(uid)
+        if not info:
+            return None
+        return info
+
+    check_and_send_notifications("slab_boundary", list(slab_candidates.keys()), kwargs_fn, rate_limit_per_day=1)
+    await log_run("system", "slab_boundary_notifications", "success",
+                   target_id=f"slab_candidates={len(slab_candidates)}")
+
+
+async def generate_recurring_expenses():
+    """Create next month's recurring expense entries. Runs daily at 03:00 PKT."""
+    today = date.today()
+    _, days_in_month = calendar.monthrange(today.year, today.month)
+
+    # Calculate next month's date range
+    if today.month == 12:
+        next_year = today.year + 1
+        next_month = 1
+    else:
+        next_year = today.year
+        next_month = today.month + 1
+    _, next_days = calendar.monthrange(next_year, next_month)
+
+    recurrent = (
+        supabase.table("budget_expenses")
+        .select("id, user_id, category_id, amount, description, recurrence_day, expense_date")
+        .eq("is_recurring", True)
+        .execute()
+    )
+
+    for exp in (recurrent.data or []):
+        try:
+            day = exp["recurrence_day"]
+            if not day:
+                continue
+            next_day = min(day, next_days)
+
+            # Check if next month's entry already exists
+            next_date = f"{next_year}-{next_month:02d}-{next_day:02d}"
+            exists = (
+                supabase.table("budget_expenses")
+                .select("id")
+                .eq("user_id", exp["user_id"])
+                .eq("category_id", exp["category_id"])
+                .eq("amount", exp["amount"])
+                .eq("expense_date", next_date)
+                .limit(1)
+                .execute()
+            )
+            if exists.data:
+                continue
+
+            supabase.table("budget_expenses").insert({
+                "user_id": exp["user_id"],
+                "category_id": exp["category_id"],
+                "amount": exp["amount"],
+                "expense_date": next_date,
+                "description": exp.get("description"),
+                "is_recurring": True,
+                "recurrence_day": day,
+            }).execute()
         except Exception:
             continue

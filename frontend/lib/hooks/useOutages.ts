@@ -3,8 +3,8 @@ import api from "@/lib/api"
 
 export const outageKeys = {
   schedule: (accountId: string) => ["outages", "schedule", accountId] as const,
-  community: (city?: string, area?: string) => ["outages", "community", city, area] as const,
-  feeders: (providerCode: string, q?: string) => ["outages", "feeders", providerCode, q] as const,
+  community: (city?: string, area?: string, utilityType?: string) => ["outages", "community", city, area, utilityType] as const,
+  feeders: (providerCode: string) => ["outages", "feeders", providerCode] as const,
 }
 
 export interface ScheduledOutage {
@@ -60,13 +60,14 @@ export function useScheduledOutages(accountId: string | null) {
   })
 }
 
-export function useCommunityReports(city?: string, area?: string) {
+export function useCommunityReports(city?: string, area?: string, utilityType?: string) {
   return useQuery({
-    queryKey: outageKeys.community(city, area),
+    queryKey: outageKeys.community(city, area, utilityType),
     queryFn: async () => {
       const params: Record<string, string> = {}
       if (city) params.city = city
       if (area) params.area = area
+      if (utilityType) params.utility_type = utilityType
       const { data } = await api.get<{ reports: CommunityReport[] }>("/outages/community", { params })
       return data.reports
     },
@@ -120,17 +121,16 @@ export function useSetFeeder() {
   })
 }
 
-export function useFeederSearch(providerCode: string, query: string) {
+export function useFeederSearch(providerCode: string) {
   return useQuery({
-    queryKey: outageKeys.feeders(providerCode, query),
+    queryKey: outageKeys.feeders(providerCode),
     queryFn: async () => {
-      if (!query || query.length < 1) return []
       const { data } = await api.get<{ feeders: FeederItem[] }>("/outages/feeders", {
-        params: { provider_code: providerCode, q: query },
+        params: { provider_code: providerCode },
       })
       return data.feeders
     },
-    enabled: !!providerCode && query.length >= 1,
+    enabled: !!providerCode,
     staleTime: 60 * 60 * 1000,
   })
 }

@@ -23,10 +23,9 @@ UTILITY_CATEGORIES = {"electricity", "gas", "water", "internet"}
 def calculate_budget_status(actual: float, limit: float) -> str:
     if limit <= 0:
         return "safe"
-    ratio = actual / limit
-    if ratio >= 1.0:
+    if actual >= limit:
         return "exceeded"
-    if ratio >= 0.8:
+    if actual >= 0.8 * limit:
         return "warning"
     return "safe"
 
@@ -181,13 +180,14 @@ def get_category_spend(user_id: str, category_code: str, month: str) -> dict:
             return {"actual": 0.0, "projected": 0.0}
 
         cat_id = categories.data[0]["id"]
+        _, last_day = calendar.monthrange(int(month[:4]), int(month[5:7]))
         expenses_list = (
             supabase.table("budget_expenses")
             .select("amount")
             .eq("user_id", user_id)
             .eq("category_id", cat_id)
-            .gte("expense_date", f"{month_start}")
-            .lte("expense_date", f"{month}-31")
+            .gte("expense_date", f"{month}-01")
+            .lte("expense_date", f"{month}-{last_day:02d}")
             .execute()
         )
         total = sum(float(e["amount"]) for e in (expenses_list.data or []))

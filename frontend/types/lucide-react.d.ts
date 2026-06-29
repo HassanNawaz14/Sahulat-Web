@@ -44,4 +44,7 @@ declare module "lucide-react" {
   export const Search: Icon
   export const AlertCircle: Icon
   export const TriangleAlert: Icon
+  export const Loader2: Icon
+  export const ChevronDown: Icon
+  export const RotateCw: Icon
 }

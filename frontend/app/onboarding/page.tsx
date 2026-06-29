@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/client"
 import { CITIES, CITY_DISCO_MAP, DISCO_NAMES } from "@/lib/constants/discoMap"
+import FeederSelector from "@/components/outages/FeederSelector"
+import PermissionPrompt from "@/components/notifications/PermissionPrompt"
 
-type Step = 1 | 2 | 3 | 4 | 5
+type Step = 1 | 2 | 3 | 4 | 5 | 6
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -17,8 +19,13 @@ export default function OnboardingPage() {
   const [area, setArea] = useState("")
   const [lang, setLang] = useState("en")
   const [consumerNumber, setConsumerNumber] = useState("")
+  const [selectedFeeder, setSelectedFeeder] = useState("")
   const [checking, setChecking] = useState(true)
   const userIdRef = useRef<string | null>(null)
+
+  const discoCode = CITY_DISCO_MAP[city.toLowerCase()] ?? ""
+  const hasValidDisco = city && !!discoCode
+  const canAddConsumer = !!consumerNumber.trim() && hasValidDisco
 
   useEffect(() => {
     const check = async () => {
@@ -52,10 +59,10 @@ export default function OnboardingPage() {
     )
   }
 
-  const steps: Step[] = [1, 2, 3, 4, 5]
+  const steps: Step[] = [1, 2, 3, 4, 5, 6]
 
   const nextStep = () => {
-    if (step < 5) setStep((step + 1) as Step)
+    if (step < 6) setStep((step + 1) as Step)
   }
 
   const completeOnboarding = async () => {
@@ -87,17 +94,18 @@ export default function OnboardingPage() {
       })
     }
 
-    if (consumerNumber) {
-      const discoCode = CITY_DISCO_MAP[city.toLowerCase()] ?? ""
-      if (discoCode) {
-        await supabase.from("consumer_accounts").insert({
-          user_id: uid,
-          utility_type: "electricity",
-          provider_code: discoCode,
-          consumer_number: consumerNumber,
-          account_label: "Main Meter",
-        })
+    if (consumerNumber && discoCode) {
+      const insertData: Record<string, unknown> = {
+        user_id: uid,
+        utility_type: "electricity",
+        provider_code: discoCode,
+        consumer_number: consumerNumber,
+        account_label: "Main Meter",
       }
+      if (selectedFeeder) {
+        insertData.feeder_name = selectedFeeder
+      }
+      await supabase.from("consumer_accounts").insert(insertData)
     }
 
     setLoading(false)
@@ -128,7 +136,7 @@ export default function OnboardingPage() {
             <select
               className="w-full rounded-lg border px-4 py-3 text-sm outline-none"
               value={city}
-              onChange={(e) => setCity(e.target.value)}
+              onChange={(e) => { setCity(e.target.value); setArea("") }}
             >
               <option value="">Select City</option>
               {CITIES.map((c) => (
@@ -189,9 +197,9 @@ export default function OnboardingPage() {
         {step === 4 && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold">Add Electricity Bill</h2>
-            {city && CITY_DISCO_MAP[city.toLowerCase()] && (
+            {hasValidDisco && (
               <p className="text-sm text-gray-500">
-                {DISCO_NAMES[CITY_DISCO_MAP[city.toLowerCase()]]} detected for {city}
+                {DISCO_NAMES[discoCode]} detected for {city}
               </p>
             )}
             <input
@@ -202,16 +210,19 @@ export default function OnboardingPage() {
             />
             <div className="flex gap-3">
               <button
-                onClick={completeOnboarding}
-                disabled={loading}
+                onClick={() => {
+                  if (canAddConsumer) {
+                    nextStep()
+                  }
+                }}
+                disabled={!consumerNumber.trim()}
                 className="flex-1 rounded-lg bg-blue-600 py-3 text-sm font-medium text-white disabled:opacity-50"
               >
-                {loading ? "Saving..." : "Add & Continue"}
+                Add & Continue
               </button>
               <button
-                onClick={() => completeOnboarding()}
-                disabled={loading}
-                className="flex-1 rounded-lg border py-3 text-sm font-medium text-gray-600 disabled:opacity-50"
+                onClick={nextStep}
+                className="flex-1 rounded-lg border py-3 text-sm font-medium text-gray-600"
               >
                 Skip
               </button>
@@ -220,30 +231,43 @@ export default function OnboardingPage() {
         )}
 
         {step === 5 && (
-          <div className="space-y-4 text-center">
-            <h2 className="text-xl font-bold">Stay Updated</h2>
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Select Feeder</h2>
             <p className="text-sm text-gray-500">
-              Get notified before load shedding hits your area
+              Choose your area&apos;s feeder for accurate load shedding schedules
             </p>
-            <button
-              onClick={async () => {
-                setLoading(true)
-                await completeOnboarding()
-                Notification.requestPermission()
-              }}
-              disabled={loading}
-              className="w-full rounded-lg bg-blue-600 py-3 text-sm font-medium text-white disabled:opacity-50"
-            >
-              Enable Notifications
-            </button>
-            <button
-              onClick={completeOnboarding}
-              disabled={loading}
-              className="w-full rounded-lg border py-3 text-sm font-medium text-gray-600 disabled:opacity-50"
-            >
-              Not Now
-            </button>
+            <div className="rounded-xl border border-gray-200 bg-white p-3">
+              <p className="mb-2 text-xs font-medium text-gray-600">
+                Provider: {DISCO_NAMES[discoCode] || discoCode.toUpperCase()}
+              </p>
+              <FeederSelector
+                providerCode={discoCode}
+                currentFeeder={selectedFeeder}
+                onFeederChange={(name) => setSelectedFeeder(name)}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={nextStep}
+                className="flex-1 rounded-lg bg-blue-600 py-3 text-sm font-medium text-white"
+              >
+                {selectedFeeder ? "Next" : "Skip"}
+              </button>
+            </div>
           </div>
+        )}
+
+        {step === 6 && (
+          <PermissionPrompt
+            onComplete={() => {
+              setLoading(true)
+              completeOnboarding()
+            }}
+            onSkip={() => {
+              setLoading(true)
+              completeOnboarding()
+            }}
+          />
         )}
       </div>
     </main>

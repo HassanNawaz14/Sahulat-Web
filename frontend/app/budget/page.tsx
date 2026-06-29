@@ -10,6 +10,7 @@ import BudgetSummaryCard from "@/components/budget/BudgetSummary"
 import CategoryProgress from "@/components/budget/CategoryProgress"
 import ExpenseList from "@/components/budget/ExpenseList"
 import AddExpenseButton from "@/components/budget/AddExpenseButton"
+import BillCard from "@/components/budget/BillCard"
 
 const now = new Date()
 const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
@@ -47,23 +48,45 @@ export default function BudgetPage() {
           <BudgetSummaryCard summary={summary} />
         ) : null}
 
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-600">Categories</p>
-            <Link href="/settings" className="text-xs text-blue-600">Manage</Link>
+        {summary?.categories && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-gray-600">Categories</p>
+              <Link href="/settings" className="text-xs text-blue-600">Manage</Link>
+            </div>
+            <div className="space-y-2">
+              {summary.categories.map((cat) => (
+                <CategoryProgress
+                  key={cat.code}
+                  category={cat}
+                  onTap={() =>
+                    setSelectedCategory(selectedCategory === cat.code ? undefined : cat.code)
+                  }
+                />
+              ))}
+            </div>
           </div>
-          <div className="space-y-2">
-            {summary?.categories.map((cat) => (
-              <CategoryProgress
-                key={cat.code}
-                category={cat}
-                onTap={() =>
-                  setSelectedCategory(selectedCategory === cat.code ? undefined : cat.code)
-                }
-              />
-            ))}
+        )}
+
+        {summary?.categories.some(cat => cat.code === "electricity" || cat.code === "gas" || cat.code === "water" || cat.code === "internet") && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-600">Utility Bills</p>
+              <Link href="/bills" className="text-xs text-blue-600">View All</Link>
+            </div>
+            <div className="space-y-3">
+              {summary.categories
+                .filter(cat => cat.code === "electricity" || cat.code === "gas" || cat.code === "water" || cat.code === "internet")
+                .map((cat) => (
+                  <BillCard
+                    key={cat.code}
+                    bill={{ id: cat.code, amount_payable: cat.actual, status: "unpaid", due_date: "" } as any}
+                    account={{ utility_type: cat.code, account_label: cat.label, provider_code: cat.code } as any}
+                  />
+                ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div>
           <div className="flex items-center justify-between mb-2">

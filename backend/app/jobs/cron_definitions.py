@@ -99,6 +99,38 @@ SCHEDULED_JOBS = [
         "minute": 0,
         "timezone": "Asia/Karachi",
     },
+    {
+        "id": "generate_recurring_expenses",
+        "func": "app.jobs.runner:generate_recurring_expenses",
+        "trigger": "cron",
+        "hour": 3,
+        "minute": 0,
+        "timezone": "Asia/Karachi",
+    },
+    {
+        "id": "check_bill_due_notifications",
+        "func": "app.jobs.runner:check_bill_due_notifications",
+        "trigger": "cron",
+        "hour": 8,
+        "minute": 0,
+        "timezone": "Asia/Karachi",
+    },
+    {
+        "id": "check_budget_alerts",
+        "func": "app.jobs.runner:check_budget_alerts",
+        "trigger": "cron",
+        "hour": 21,
+        "minute": 0,
+        "timezone": "Asia/Karachi",
+    },
+    {
+        "id": "check_slab_boundary_notifications",
+        "func": "app.jobs.runner:check_slab_boundary_notifications",
+        "trigger": "cron",
+        "hour": 20,
+        "minute": 0,
+        "timezone": "Asia/Karachi",
+    },
 ]
 
 

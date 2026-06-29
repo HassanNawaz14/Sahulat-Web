@@ -31,7 +31,7 @@ def parse_billing_month(issue_date_str: str | None, due_date_str: str | None = N
     target = issue_date_str or due_date_str
     if not target:
         return date.today().replace(day=1).isoformat()
-    for fmt in ("%d %b %y", "%d-%m-%Y", "%Y-%m-%d", "%d/%m/%Y"):
+    for fmt in ("%d %b %Y", "%d %b %y", "%d-%m-%Y", "%Y-%m-%d", "%d/%m/%Y"):
         try:
             d = datetime.strptime(target, fmt).date()
             return d.replace(day=1).isoformat()

@@ -1,3 +1,4 @@
+import io
 import re
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
@@ -10,7 +11,7 @@ from app.scrapers.common.feeder_area_map import lookup_area, default_city
 from app.core.supabase import supabase
 
 DISCO_PDF_URLS: dict[str, str] = {
-    "lesco": "https://www.lesco.gov.pk:36269/Modules/LoadShedding/LoadSheddingSchedule.pdf",
+    "lesco": "https://www.lesco.gov.pk/Notice_files/SDLS/LDM1.pdf",
 }
 
 WEEKDAYS = [
@@ -71,7 +72,7 @@ async def parse_loadshedding_pdf(
         resp.raise_for_status()
 
     entries: list[LoadSheddingEntry] = []
-    with pdfplumber.open(resp.content) as pdf:
+    with pdfplumber.open(io.BytesIO(resp.content)) as pdf:
         for page in pdf.pages:
             tables = page.extract_tables()
             for table in tables:
@@ -171,9 +172,6 @@ def upsert_outage_schedules(
             "slots": slots_data,
             "week_start": week_start.isoformat(),
             "source_pdf_url": source_url or None,
-            "confidence_score": row.confidence_score,
-            "source_url": source_url or None,
-            "raw_text": f"{row.feeder_name} {row.start_time}-{row.end_time}",
         }
 
         supabase.table("outage_schedules").upsert(

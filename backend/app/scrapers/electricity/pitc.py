@@ -5,6 +5,7 @@ on the same ASP.NET backend at bill.pitc.com.pk/{disco}bill.
 
 This scraper handles all of them with identical form POST logic.
 """
+import logging
 import re
 
 from bs4 import BeautifulSoup
@@ -18,6 +19,8 @@ from app.scrapers.base import (
     PortalUnreachableError,
 )
 from app.scrapers.common.http_client import get_client
+
+logger = logging.getLogger(__name__)
 
 DISCO_CODES = {
     "lesco": "lesco",
@@ -62,11 +65,12 @@ class PitcBillScraper(BaseScraper):
                 f"Invalid {self.provider_code.upper()} reference: {raw}"
             )
 
-        async with get_client() as client:
+        async with get_client(timeout=90) as client:
             try:
                 form_resp = await client.get(self._base_url)
                 form_resp.raise_for_status()
             except Exception as e:
+                logger.exception("GET %s failed: %s: %s", self._base_url, type(e).__name__, e)
                 raise PortalUnreachableError(
                     f"{self.provider_code.upper()} PITC portal unreachable: {e}"
                 ) from e
@@ -96,6 +100,7 @@ class PitcBillScraper(BaseScraper):
                 bill_resp = await client.post(self._base_url, data=payload)
                 bill_resp.raise_for_status()
             except Exception as e:
+                logger.exception("POST %s failed: %s: %s", self._base_url, type(e).__name__, e)
                 raise PortalUnreachableError(
                     f"{self.provider_code.upper()} bill fetch failed: {e}"
                 ) from e
@@ -128,13 +133,11 @@ class PitcBillScraper(BaseScraper):
             for tag in soup.find_all(["script", "style"]):
                 tag.decompose()
 
-            tables = soup.find_all("table")
-
-            self._parse_meter_table(tables, bill)
-            self._parse_header_table(tables, bill)
-            self._parse_consumer_table(tables, bill)
-            self._parse_charges_table(tables, bill)
-            self._parse_summary_table(tables, bill)
+            self._parse_consumer_name(soup, bill)
+            self._parse_meter_readings(soup, bill)
+            self._parse_charges(soup, bill)
+            self._parse_payable_amount(soup, bill)
+            self._parse_dates(soup, bill)
 
             if bill.amount_payable == 0 and bill.due_date is None:
                 raise ParsingFailedError(
@@ -151,171 +154,90 @@ class PitcBillScraper(BaseScraper):
 
         return bill
 
-    def _parse_header_table(self, tables: list, bill: ScrapedBill) -> None:
-        if len(tables) < 1:
-            return
-        rows = tables[0].find_all("tr")
-        if len(rows) < 2:
-            return
-        cells = rows[1].find_all(["td", "th"])
-        texts = [c.get_text(strip=True) for c in cells if c.get_text(strip=True)]
+    def _parse_consumer_name(self, soup: BeautifulSoup, bill: ScrapedBill) -> None:
+        for span in soup.select(".en-lbl"):
+            if "NAME & ADDRESS" in span.get_text():
+                label_row = span.find_parent("div")
+                if label_row:
+                    val_div = label_row.find_next_sibling("div")
+                    if val_div:
+                        bill.consumer_name = val_div.get_text(strip=True)[:150]
+                return
 
-        issue_date = None
-        due_date = None
-        for i, cell_text in enumerate(texts):
-            if "issue date" in cell_text.lower() or ("issue" in cell_text.lower() and "date" not in cell_text.lower()):
-                if i + 1 < len(texts):
-                    issue_date = texts[i + 1]
-            if "due date" in cell_text.lower() or ("due" in cell_text.lower() and "date" not in cell_text.lower()):
-                if i + 1 < len(texts):
-                    due_date = texts[i + 1]
-
-        header_row_1 = tables[0].find_all("tr")[0]
-        header_cells = [c.get_text(strip=True) for c in header_row_1.find_all(["td", "th"])]
-        value_row_1 = texts
-
-        for i, hdr in enumerate(header_cells):
-            hl = hdr.lower()
-            if i < len(value_row_1):
-                v = value_row_1[i]
-                if "issue date" in hl:
-                    bill.issue_date = v
-                elif "due date" in hl:
-                    bill.due_date = v
-
-        if not bill.issue_date and issue_date:
-            bill.issue_date = issue_date
-        if not bill.due_date and due_date:
-            bill.due_date = due_date
-
-    def _parse_consumer_table(self, tables: list, bill: ScrapedBill) -> None:
-        for table in tables:
-            rows = table.find_all("tr")
-            for row in rows:
-                cells = row.find_all(["td", "th"])
-                for cell in cells:
-                    spans = cell.find_all("span")
-                    for span in spans:
-                        text = span.get_text(strip=True)
-                        if re.search(r"\bS/O\b", text, re.IGNORECASE):
-                            bill.consumer_name = text[:150]
-                            return
-
-    def _parse_charges_table(self, tables: list, bill: ScrapedBill) -> None:
-        for table in tables:
-            rows = table.find_all("tr")
-            text_blocks = []
-            for row in rows:
-                cells = row.find_all(["td", "th"])
-                texts = [c.get_text(strip=True) for c in cells]
-                text_blocks.append(texts)
-
-            full_text = " ".join(" ".join(t for t in row if t) for row in text_blocks).lower()
-
-            if "units consumed" not in full_text and "cost of electricity" not in full_text:
+    def _parse_meter_readings(self, soup: BeautifulSoup, bill: ScrapedBill) -> None:
+        labels = {"PREVIOUS READING": "previous_reading", "PRESENT READING": "current_reading", "UNITS": "units_consumed"}
+        for span in soup.select(".en-lbl"):
+            text = span.get_text(strip=True)
+            if text not in labels:
                 continue
-
-            for texts in text_blocks:
-                line = " ".join(texts).lower()
-
-                if "units consumed" in line:
-                    for possible in texts:
-                        val = possible.replace(",", "")
-                        if val.replace(".", "").isdigit() and len(val) < 8:
-                            bill.units_consumed = float(val)
-                            break
-
-                if "arrear" in line and bill.arrears == 0:
-                    for possible in texts:
-                        val = possible.replace(",", "").replace(" ", "")
-                        if val.replace(".", "").isdigit() and len(val) < 10:
-                            bill.arrears = float(val)
-                            break
-
-                if "meter rent" in line:
-                    for possible in texts:
-                        val = possible.replace(",", "")
-                        if val.replace(".", "").isdigit() and float(val) < 1000:
-                            bill.meter_rent = float(val)
-                            break
-
-                if ("f.c" in line or "fc" in line or "fuel" in line) and "surcharge" in line:
-                    for possible in texts:
-                        val = possible.replace(",", "")
-                        if val.replace(".", "").lstrip("-").isdigit():
-                            bill.fc_surcharge = abs(float(val))
-                            break
-
-            break
-
-    def _parse_summary_table(self, tables: list, bill: ScrapedBill) -> None:
-        for table in tables:
-            rows = table.find_all("tr")
-            text_blocks = []
-            for row in rows:
-                cells = row.find_all(["td", "th"])
-                texts = [c.get_text(strip=True) for c in cells]
-                text_blocks.append(texts)
-
-            full_text = " ".join(" ".join(t for t in row if t) for row in text_blocks).lower()
-
-            if "payable within" not in full_text and "current bill" not in full_text:
+            attr = labels[text]
+            cell = span.find_parent("div", class_="grid-col-cell")
+            if not cell:
                 continue
+            val_div = cell.find("div", class_="val-space")
+            if not val_div:
+                continue
+            val_str = re.sub(r"[^0-9.]", "", val_div.get_text())
+            if val_str:
+                try:
+                    setattr(bill, attr, float(val_str))
+                except ValueError:
+                    pass
 
-            for texts in text_blocks:
-                line = " ".join(texts).lower()
+    def _parse_charges(self, soup: BeautifulSoup, bill: ScrapedBill) -> None:
+        for row in soup.select(".charges-bd-row"):
+            label_el = row.select_one(".charges-bd-en")
+            val_el = row.select_one(".charges-bd-val")
+            if not label_el or not val_el:
+                continue
+            text = label_el.get_text(strip=True).lower()
+            val_str = re.sub(r"[^0-9.-]", "", val_el.get_text(strip=True))
+            try:
+                val = float(val_str)
+            except ValueError:
+                continue
+            if "taxes" in text:
+                bill.taxes = val
+            elif "arrears" in text:
+                bill.arrears = val
+            elif "total fpa" in text or ("fpa" in text and "total" in text):
+                bill.fc_surcharge = abs(val)
+            elif "meter rent" in text:
+                bill.meter_rent = val
 
-                if "payable within" in line or "payable with in" in line:
-                    for possible in texts:
-                        val = possible.replace(",", "")
-                        if val.replace(".", "").isdigit() and len(val) < 12:
-                            bill.amount_payable = round(float(val))
-                            break
+    def _parse_payable_amount(self, soup: BeautifulSoup, bill: ScrapedBill) -> None:
+        grid = soup.select_one(".slip-matrix-grid")
+        if not grid:
+            return
+        values = grid.select(".slip-matrix-value")
+        if len(values) >= 3:
+            val_str = re.sub(r"[^0-9.]", "", values[0].get_text(strip=True))
+            if val_str:
+                try:
+                    bill.amount_payable = round(float(val_str))
+                except ValueError:
+                    pass
+            due_raw = values[2].get_text(strip=True)
+            if due_raw and not bill.due_date:
+                bill.due_date = due_raw.strip()
 
-                if "current bill" in line:
-                    for possible in texts:
-                        val = possible.replace(",", "")
-                        if val.replace(".", "").isdigit() and len(val) < 12:
-                            if bill.amount_payable == 0:
-                                bill.amount_payable = round(float(val))
-                            break
-
-            break
-
-    def _parse_meter_table(self, tables: list, bill: ScrapedBill) -> None:
-        for table in tables:
-            rows = table.find_all("tr")
-            for ri, row in enumerate(rows):
-                cells = row.find_all(["td", "th"])
-                cell_texts = [c.get_text(strip=True) for c in cells]
-                # Filter out empty and merged-cell duplicates
-                seen = set()
-                unique_texts = []
-                for t in cell_texts:
-                    t = t.strip().lower()
-                    if t and t not in seen:
-                        seen.add(t)
-                        unique_texts.append(t)
-
-                if 4 <= len(unique_texts) <= 8:
-                    has_prev = any("previous" in t and "reading" in t for t in unique_texts)
-                    has_present = any("present" in t and "reading" in t for t in unique_texts)
-
-                    if has_prev and has_present:
-                        if ri + 1 < len(rows):
-                            next_cells = rows[ri + 1].find_all(["td", "th"])
-                            next_texts = [c.get_text(strip=True) for c in next_cells]
-                            for ct in next_texts:
-                                try:
-                                    val = float(ct.replace(",", ""))
-                                    if 0 < val < 1000000:
-                                        if bill.previous_reading is None:
-                                            bill.previous_reading = val
-                                        elif bill.current_reading is None:
-                                            bill.current_reading = val
-                                except ValueError:
-                                    pass
-                        return
+    def _parse_dates(self, soup: BeautifulSoup, bill: ScrapedBill) -> None:
+        if bill.issue_date and bill.due_date:
+            return
+        labels = {"ISSUE DATE": "issue_date", "DUE DATE": "due_date"}
+        for span in soup.select("span"):
+            text = span.get_text(strip=True)
+            if text not in labels:
+                continue
+            attr = labels[text]
+            cell = span.find_parent("div", class_="right-grid-cell")
+            if not cell:
+                continue
+            for el in cell.find_all(["div", "span"]):
+                txt = el.get_text(strip=True)
+                if re.search(r"\d{1,2}\s+[A-Z]{3}\s+\d{2,4}", txt):
+                    setattr(bill, attr, txt)
+                    break
 
     @staticmethod
     def _extract_field(html: str, field_name: str) -> str:

@@ -1,3 +1,4 @@
+import hashlib
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
@@ -75,6 +76,21 @@ def _outage_status(start_time: str, end_time: str) -> str:
     return "upcoming"
 
 
+def _auto_detect_feeder(provider_code: str, city: str) -> str:
+    """Try to find a single matching feeder for a provider+city pair."""
+    results = (
+        supabase.table("outage_schedules")
+        .select("feeder_name")
+        .eq("provider_code", provider_code)
+        .eq("city", city)
+        .limit(1)
+        .execute()
+    )
+    if results.data:
+        return results.data[0]["feeder_name"]
+    return ""
+
+
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 
@@ -83,8 +99,12 @@ async def get_schedule(
     consumer_account_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    """Get scheduled outages for the next 3 days for the user's area/feeder."""
-    # 1. Get account with home details
+    """Get scheduled outages for the next 3 days for the user's area/feeder.
+
+    Reads feeder_name from the consumer_account directly (no home required).
+    Auto-detects feeder from outage_schedules by city if none is set.
+    """
+    # 1. Get account
     account = (
         supabase.table("consumer_accounts")
         .select("*, homes!left(*)")
@@ -97,14 +117,22 @@ async def get_schedule(
 
     acc = account.data[0]
     home = acc.get("homes") or {}
-    feeder_name = home.get("feeder_name") or ""
-    city = home.get("city") or acc.get("city") or default_city(acc["provider_code"])
+
+    # Read feeder from account first, fall back to home (legacy)
+    feeder_name = acc.get("feeder_name") or home.get("feeder_name") or ""
+    city = acc.get("city") or default_city(acc["provider_code"])
     area = home.get("area") or ""
 
     today = date.today()
     dates = [today, today + timedelta(days=1), today + timedelta(days=2)]
 
-    # 2. Query by feeder_name if set, otherwise by area
+    # 2. Auto-detect feeder if not set (for the response only, don't persist)
+    if not feeder_name:
+        detected = _auto_detect_feeder(acc["provider_code"], city)
+        if detected:
+            feeder_name = detected
+
+    # 3. Query by feeder_name if set, otherwise by area
     all_schedules = []
     if feeder_name:
         feeder_results = (
@@ -133,7 +161,7 @@ async def get_schedule(
         )
         all_schedules = area_results.data or []
 
-    # 3. Group by date and compute status
+    # 4. Group by date and compute status
     grouped: dict[str, list[dict]] = {"today": [], "tomorrow": [], "day_after": []}
     current_outage = None
     next_outage = None
@@ -210,8 +238,9 @@ async def get_community_reports(
     for r in reports:
         key = f"{r['city']}|{r['area_slug']}|{r['utility_type']}"
         if key not in clusters:
+            cluster_id = hashlib.sha256(key.encode()).hexdigest()[:16]
             clusters[key] = {
-                "id": r["id"],
+                "id": cluster_id,
                 "utility_type": r["utility_type"],
                 "report_type": r.get("report_type", "electricity_outage"),
                 "city": r["city"],
@@ -355,10 +384,10 @@ async def set_feeder(
     body: FeederUpdate,
     current_user: dict = Depends(get_current_user),
 ):
-    """Set the feeder name on the user's home associated with a consumer account."""
+    """Set the feeder name on the consumer account (no home link required)."""
     account = (
         supabase.table("consumer_accounts")
-        .select("home_id")
+        .select("id")
         .eq("id", body.consumer_account_id)
         .eq("user_id", current_user["user_id"])
         .execute()
@@ -366,14 +395,10 @@ async def set_feeder(
     if not account.data:
         raise HTTPException(404, "Consumer account not found")
 
-    home_id = account.data[0].get("home_id")
-    if not home_id:
-        raise HTTPException(400, "Consumer account is not linked to a home")
-
-    supabase.table("homes").update({
+    supabase.table("consumer_accounts").update({
         "feeder_name": body.feeder_name,
         "updated_at": datetime.utcnow().isoformat(),
-    }).eq("id", home_id).execute()
+    }).eq("id", body.consumer_account_id).execute()
 
     return {"status": "ok", "feeder_name": body.feeder_name}
 
@@ -394,11 +419,12 @@ async def search_feeders(
 
     if city:
         query = query.eq("city", city)
+    if q:
+        query = query.ilike("feeder_name", f"%{q}%")
 
     result = query.execute()
     feeders = result.data or []
 
-    # Deduplicate
     seen: set[str] = set()
     unique_feeders = []
     for f in feeders:
@@ -406,10 +432,18 @@ async def search_feeders(
         if key in seen:
             continue
         seen.add(key)
-        if q:
-            if q.lower() in key.lower() or q.lower() in (f.get("feeder_code") or "").lower():
-                unique_feeders.append(f)
-        else:
-            unique_feeders.append(f)
+        unique_feeders.append(f)
 
     return {"feeders": unique_feeders[:50]}
+
+
+@router.post("/outages/refresh-feeders")
+async def refresh_feeders():
+    """Trigger the loadshedding PDF scraper on demand. Populates outage_schedules."""
+    from app.jobs.runner import fetch_loadshedding_pdfs
+
+    result = await fetch_loadshedding_pdfs()
+    if result.get("status") != "ok":
+        error = result.get("error", "Unknown error")
+        raise HTTPException(status_code=502, detail=error)
+    return {"status": "ok", "total_upserted": result.get("total_upserted", 0)}

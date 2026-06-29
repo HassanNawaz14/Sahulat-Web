@@ -17,10 +17,20 @@ const UTILITY_COLORS: Record<string, string> = {
   internet: "text-purple-600 bg-purple-50 border-purple-200",
 }
 
+const UTILITY_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "electricity", label: "Electricity", icon: Zap },
+  { value: "gas", label: "Gas", icon: Flame },
+  { value: "water", label: "Water", icon: Droplets },
+  { value: "internet", label: "Internet", icon: Wifi },
+]
+
 interface CommunityFeedProps {
   reports: CommunityReport[]
   isLoading: boolean
   onRefresh: () => void
+  utilityFilter?: string
+  onUtilityFilterChange?: (value: string) => void
 }
 
 function timeAgo(isoStr: string) {
@@ -40,7 +50,7 @@ function confidenceBadge(score: number) {
   return "bg-gray-100 text-gray-500"
 }
 
-export default function CommunityFeed({ reports, isLoading, onRefresh }: CommunityFeedProps) {
+export default function CommunityFeed({ reports, isLoading, onRefresh, utilityFilter = "", onUtilityFilterChange }: CommunityFeedProps) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
       <div className="flex items-center justify-between">
@@ -54,6 +64,29 @@ export default function CommunityFeed({ reports, isLoading, onRefresh }: Communi
           Refresh
         </button>
       </div>
+
+      {onUtilityFilterChange && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {UTILITY_OPTIONS.map((opt) => {
+            const Icon = opt.icon
+            const isActive = utilityFilter === opt.value
+            return (
+              <button
+                key={opt.value}
+                onClick={() => onUtilityFilterChange(opt.value)}
+                className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                  isActive
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                }`}
+              >
+                {Icon && <Icon className="h-3 w-3" />}
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {isLoading && reports.length === 0 ? (
         <div className="mt-3 space-y-2">

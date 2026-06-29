@@ -7,6 +7,7 @@ import { useReportOutage } from "@/lib/hooks/useOutages"
 interface ReportOutageButtonProps {
   homeId?: string
   consumerAccountId?: string
+  providerCode?: string
 }
 
 const UTILITY_OPTIONS = [
@@ -16,7 +17,7 @@ const UTILITY_OPTIONS = [
   { value: "internet", label: "Internet", icon: Wifi, color: "text-purple-600 bg-purple-50 border-purple-200" },
 ]
 
-export default function ReportOutageButton({ homeId, consumerAccountId }: ReportOutageButtonProps) {
+export default function ReportOutageButton({ homeId, consumerAccountId, providerCode }: ReportOutageButtonProps) {
   const [open, setOpen] = useState(false)
   const [utilityType, setUtilityType] = useState("electricity")
   const [severity, setSeverity] = useState("medium")
@@ -30,6 +31,7 @@ export default function ReportOutageButton({ homeId, consumerAccountId }: Report
         severity,
         note: note || undefined,
         home_id: homeId || undefined,
+        provider_code: providerCode || undefined,
       },
       {
         onSuccess: () => {

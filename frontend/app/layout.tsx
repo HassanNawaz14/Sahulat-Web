@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 import { AuthProvider } from "@/components/providers"
 import ErrorBoundary from "@/components/ErrorBoundary"
+import PushInit from "@/components/notifications/PushInit"
 
 export const metadata: Metadata = {
   title: "Sahulat — Apni utilities, ek jagah",
@@ -18,7 +19,10 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen bg-gray-50 antialiased">
         <ErrorBoundary>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <PushInit />
+            {children}
+          </AuthProvider>
         </ErrorBoundary>
       </body>
     </html>

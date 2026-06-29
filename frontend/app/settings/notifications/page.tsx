@@ -1,53 +1,110 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
 
-import { createClient } from "@/lib/supabase/client"
+import {
+  useNotificationPreferences,
+  useUpdateNotificationPreferences,
+  useSubscribePush,
+  useUnsubscribePush,
+  useTestNotification,
+  type NotificationPreference,
+} from "@/lib/hooks/useNotifications"
+
+const CATEGORY_LABELS: Record<string, string> = {
+  bill_due: "Bill Due Reminders",
+  outage: "Outage Alerts",
+  slab: "Slab Boundary Alerts",
+  budget: "Budget Alerts",
+  solar: "Solar Alerts",
+  community: "Community Outage Reports",
+}
 
 export default function NotificationsPage() {
-  const [prefs, setPrefs] = useState<any>(null)
+  const { data: preferences, isLoading } = useNotificationPreferences()
+  const updatePrefs = useUpdateNotificationPreferences()
+  const subscribePush = useSubscribePush()
+  const unsubscribePush = useUnsubscribePush()
+  const testNotif = useTestNotification()
 
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
-      supabase.from("notification_preferences").select("*").eq("user_id", user.id).single().then(({ data }) => {
-        if (data) setPrefs(data)
-      })
-    })
-  }, [])
-
-  const toggle = async (key: string, value: boolean) => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    await supabase.from("notification_preferences").update({ [key]: value }).eq("user_id", user.id)
-    setPrefs((prev: any) => ({ ...prev, [key]: value }))
+  if (isLoading) {
+    return <p className="text-sm text-gray-500">Loading...</p>
   }
 
-  if (!prefs) return <p className="text-sm text-gray-500">Loading...</p>
+  const toggle = (category: string, enabled: boolean) => {
+    if (!preferences) return
+    const updated = preferences.map((p) =>
+      p.category === category ? { ...p, enabled } : p
+    )
+    updatePrefs.mutate(updated)
+  }
 
-  const fields = [
-    { key: "outage_alert_enabled", label: "Outage Alerts" },
-    { key: "bill_due_alert_enabled", label: "Bill Due Reminders" },
-    { key: "slab_alert_enabled", label: "Slab Boundary Alerts" },
-    { key: "solar_alert_enabled", label: "Solar Alerts" },
-    { key: "community_alerts", label: "Community Outage Reports" },
-  ]
+  const handleTest = async () => {
+    try {
+      await testNotif.mutateAsync()
+      alert("Test notification sent!")
+    } catch {
+      alert("No active push subscription. Enable notifications first.")
+    }
+  }
 
   return (
-    <div className="space-y-4">
-      {fields.map(({ key, label }) => (
-        <label key={key} className="flex items-center justify-between rounded-lg border bg-white p-4">
-          <span className="text-sm font-medium">{label}</span>
+    <div className="mx-auto max-w-lg px-4 py-8">
+      <div className="flex items-center gap-3 mb-6">
+        <Link href="/settings" className="rounded-full p-1 text-gray-500 hover:bg-gray-100">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="text-xl font-bold">Notification Settings</h1>
+      </div>
+      <div className="space-y-4">
+      {preferences?.map((pref: NotificationPreference) => (
+        <label
+          key={pref.category}
+          className="flex items-center justify-between rounded-lg border bg-white p-4"
+        >
+          <span className="text-sm font-medium">
+            {CATEGORY_LABELS[pref.category] ?? pref.category}
+          </span>
           <input
             type="checkbox"
             className="h-5 w-5 accent-blue-600"
-            checked={!!prefs[key]}
-            onChange={(e) => toggle(key, e.target.checked)}
+            checked={pref.enabled}
+            onChange={(e) => toggle(pref.category, e.target.checked)}
           />
         </label>
       ))}
+
+      <hr className="my-4" />
+
+      <div className="rounded-lg border bg-white p-4">
+        <h3 className="text-sm font-medium mb-2">Push Subscription</h3>
+        <div className="flex gap-2">
+          <button
+            onClick={() => subscribePush.mutate()}
+            disabled={subscribePush.isPending}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white disabled:opacity-50"
+          >
+            {subscribePush.isPending ? "Subscribing..." : "Subscribe"}
+          </button>
+          <button
+            onClick={() => unsubscribePush.mutate()}
+            disabled={unsubscribePush.isPending}
+            className="rounded-lg border px-4 py-2 text-xs font-medium text-gray-600 disabled:opacity-50"
+          >
+            Unsubscribe
+          </button>
+        </div>
+      </div>
+
+      <button
+        onClick={handleTest}
+        disabled={testNotif.isPending}
+        className="w-full rounded-lg border py-3 text-sm font-medium text-gray-600 disabled:opacity-50 hover:bg-gray-100 transition-colors"
+      >
+        {testNotif.isPending ? "Sending..." : "Send Test Notification"}
+      </button>
+      </div>
     </div>
   )
 }

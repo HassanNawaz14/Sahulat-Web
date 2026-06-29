@@ -109,6 +109,27 @@ export default function DashboardPage() {
             <span className="text-xs text-amber-400">&rarr;</span>
           </Link>
 
+          <Link
+            href="/budget"
+            className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 transition-colors hover:bg-emerald-100"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-emerald-700">Budget Manager</span>
+            </div>
+            <span className="text-xs text-emerald-400">&rarr;</span>
+          </Link>
+
+          <Link
+            href="/solar"
+            className="flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 transition-colors hover:bg-amber-100"
+          >
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-500" />
+              <span className="text-sm font-medium text-amber-700">Solar Dashboard</span>
+            </div>
+            <span className="text-xs text-amber-400">&rarr;</span>
+          </Link>
+
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-gray-600">Your Utilities</p>
             <button

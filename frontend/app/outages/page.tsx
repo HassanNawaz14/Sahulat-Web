@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useAuth } from "@/components/providers"
 import { useConsumerAccounts } from "@/lib/hooks/useBills"
 import {
@@ -17,12 +17,19 @@ import FeederSelector from "@/components/outages/FeederSelector"
 export default function OutagesPage() {
   const { user, isLoading: authLoading } = useAuth()
   const { data: accounts, isLoading: accountsLoading } = useConsumerAccounts()
+  const [utilityFilter, setUtilityFilter] = useState<string>("")
 
 
   // Pick first electricity account for schedule queries
   const electricityAccount = useMemo(() => {
     if (!accounts) return null
     return accounts.find((a) => a.utility_type === "electricity" && a.is_active) ?? null
+  }, [accounts])
+
+  // Derive user's city from their accounts for scoping community reports
+  const userCity = useMemo(() => {
+    if (!accounts || accounts.length === 0) return undefined
+    return accounts.find((a) => a.city)?.city ?? undefined
   }, [accounts])
 
   const {
@@ -35,7 +42,7 @@ export default function OutagesPage() {
     data: reports,
     isLoading: feedLoading,
     refetch: refetchFeed,
-  } = useCommunityReports()
+  } = useCommunityReports(userCity, undefined, utilityFilter || undefined)
 
   const { mutate: restoreOutage } = useRestoreOutage()
 
@@ -79,6 +86,7 @@ export default function OutagesPage() {
         <ReportOutageButton
           homeId={electricityAccount?.home_id ?? undefined}
           consumerAccountId={electricityAccount?.id ?? undefined}
+          providerCode={electricityAccount?.provider_code ?? undefined}
         />
         {electricityAccount && (
           <FeederSelector
@@ -115,6 +123,8 @@ export default function OutagesPage() {
           reports={reports ?? []}
           isLoading={feedLoading}
           onRefresh={handleRefreshFeed}
+          utilityFilter={utilityFilter}
+          onUtilityFilterChange={setUtilityFilter}
         />
       </div>
 

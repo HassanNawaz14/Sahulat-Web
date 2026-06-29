@@ -5,7 +5,10 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.bills import router as bills_router
 from app.api.v1.consumption import router as consumption_router
 from app.api.v1.estimates import router as estimates_router
+from app.api.v1.budget import router as budget_router
 from app.api.v1.outages import router as outages_router
+from app.api.v1.notifications import router as notifications_router
+from app.api.v1.solar import router as solar_router
 from app.jobs.cron_definitions import start_scheduler
 
 app = FastAPI(title="Sahulat API", version="0.1.0")
@@ -23,6 +26,9 @@ app.include_router(bills_router)
 app.include_router(consumption_router)
 app.include_router(estimates_router)
 app.include_router(outages_router)
+app.include_router(budget_router)
+app.include_router(notifications_router)
+app.include_router(solar_router)
 
 
 @app.on_event("startup")
